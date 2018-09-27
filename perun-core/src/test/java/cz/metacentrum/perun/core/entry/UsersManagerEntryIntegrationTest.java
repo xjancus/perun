@@ -700,6 +700,20 @@ public class UsersManagerEntryIntegrationTest extends AbstractPerunIntegrationTe
 
 	}
 
+	@ Test
+	public void getVosWhereUserIsNotAdminButHisGroupIs() throws Exception {
+		System.out.println(CLASS_NAME + "getVosWhereUserIsNotAdminButHisGroupIs");
+
+		Member member = setUpMember(vo);
+		User user = perun.getUsersManagerBl().getUserByMember(sess, member);
+		Group group = setUpGroup(vo, member);
+		perun.getVosManager().addAdmin(sess, vo, group);
+
+		List<Vo> vos = usersManager.getVosWhereUserIsAdmin(sess, user);
+		assertTrue("our user should be admin in one VO", vos.size() >= 1);
+
+	}
+
 	@Test (expected=UserNotExistsException.class)
 	public void getVosWhereUserIsAdminWhenUserNotExist() throws Exception {
 		System.out.println(CLASS_NAME + "getVosWhereUserIsAdminWhenUserNotExist");
@@ -978,6 +992,24 @@ public class UsersManagerEntryIntegrationTest extends AbstractPerunIntegrationTe
 		assertTrue(count>0);
 	}
 
+	@Test
+	public void getUsersByIds() throws Exception {
+		System.out.println(CLASS_NAME + "getUsersByIds");
+
+		List ids = new ArrayList();
+		List users = new ArrayList();
+
+		for (int i = 1; i < 1002; i++) {
+			User user2 = new User();
+			user2.setFirstName(userFirstName+i);
+			perun.getUsersManagerBl().createUser(sess, user2);
+			ids.add(user2.getId());
+			users.add(user2);
+		}
+
+		assertEquals(users, perun.getUsersManagerBl().getUsersByIds(sess, ids));
+
+	}
 
 	// PRIVATE METHODS -------------------------------------------------------------
 

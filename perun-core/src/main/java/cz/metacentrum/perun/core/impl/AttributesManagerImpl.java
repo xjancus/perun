@@ -320,6 +320,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 			this.attributeHolder2 = attributeHolder2;
 		}
 
+		@Override
 		public Attribute mapRow(ResultSet rs, int i) throws SQLException {
 			Attribute attribute = new Attribute(ATTRIBUTE_DEFINITION_MAPPER.mapRow(rs, i));
 
@@ -611,6 +612,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 			this.attributeDefinition = attributeDefinition;
 		}
 
+		@Override
 		public Object mapRow(ResultSet rs, int i) throws SQLException {
 			String stringValue;
 			if (Utils.isLargeAttribute(sess, attributeDefinition)) {
@@ -661,6 +663,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 
 
+		@Override
 		public RichAttribute<P, S> mapRow(ResultSet rs, int i) throws SQLException {
 			Attribute attribute = attributeRowMapper.mapRow(rs, i);
 			P primaryHolder = primaryRowMapper.mapRow(rs, i);
@@ -671,6 +674,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 	}
 
+	@Override
 	public List<Attribute> getAttributes(PerunSession sess, Facility facility) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("fac") + " from attr_names " +
@@ -682,6 +686,28 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 			log.debug("No attribute for facility exists.");
 			return new ArrayList<>();
 
+		} catch (RuntimeException ex) {
+			throw new InternalErrorException(ex);
+		}
+	}
+
+	@Override
+	public List<Attribute> getAttributes(PerunSession sess, Facility facility, List<String> attrNames) throws InternalErrorException {
+		MapSqlParameterSource parameters = new MapSqlParameterSource();
+		parameters.addValue("fId", facility.getId());
+		parameters.addValue("nSC", AttributesManager.NS_FACILITY_ATTR_CORE);
+		parameters.addValue("nSO", AttributesManager.NS_FACILITY_ATTR_OPT);
+		parameters.addValue("nSD", AttributesManager.NS_FACILITY_ATTR_DEF);
+		parameters.addValue("nSV", AttributesManager.NS_FACILITY_ATTR_VIRT);
+		parameters.addValue("attrNames", attrNames);
+
+		try {
+			return namedParameterJdbcTemplate.query("select " + getAttributeMappingSelectQuery("fav") + " from attr_names " +
+							"left join facility_attr_values fav on id=fav.attr_id and facility_id=:fId " +
+							"where namespace in ( :nSC,:nSO,:nSD,:nSV ) and attr_names.attr_name in ( :attrNames )",
+					parameters, new SingleBeanAttributeRowMapper<>(sess, this, facility));
+		} catch (EmptyResultDataAccessException ex) {
+			return new ArrayList<>();
 		} catch (RuntimeException ex) {
 			throw new InternalErrorException(ex);
 		}
@@ -754,7 +780,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 	}
 
 
-
+	@Override
 	public List<Attribute> getAttributes(PerunSession sess, Vo vo) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("voattr") + " from attr_names " +
@@ -768,6 +794,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getAttributes(PerunSession sess, Group group) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("groupattr") + " from attr_names " +
@@ -781,6 +808,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getAttributes(PerunSession sess, Host host) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("host_attr_values") + " from attr_names " +
@@ -795,6 +823,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getAttributes(PerunSession sess, Resource resource) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("resource_attr_values") + " from attr_names " +
@@ -810,6 +839,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 	}
 
 
+	@Override
 	public List<Attribute> getAttributes(PerunSession sess, Resource resource, Member member) throws InternalErrorException {
 		try {
 			//member-resource attributes, member core attributes
@@ -827,6 +857,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getAttributes(PerunSession sess, Member member, Group group) throws InternalErrorException {
 		try {
 			//member-group attributes, member core attributes
@@ -931,6 +962,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getAttributes(PerunSession sess, Member member) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("mem") + " from attr_names " +
@@ -946,6 +978,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getAttributes(PerunSession sess, Vo vo, List<String> attrNames) throws InternalErrorException {
 
 		MapSqlParameterSource parameters = new MapSqlParameterSource();
@@ -968,6 +1001,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getAllAttributesStartWithNameWithoutNullValue(PerunSession sess, Group group, String startPartOfName) throws InternalErrorException {
 
 		MapSqlParameterSource parameters = new MapSqlParameterSource();
@@ -989,6 +1023,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getAllAttributesStartWithNameWithoutNullValue(PerunSession sess, Resource resource, String startPartOfName) throws InternalErrorException {
 
 		MapSqlParameterSource parameters = new MapSqlParameterSource();
@@ -1010,6 +1045,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getAttributes(PerunSession sess, Member member, List<String> attrNames) throws InternalErrorException {
 
 		MapSqlParameterSource parameters = new MapSqlParameterSource();
@@ -1032,6 +1068,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getAttributes(PerunSession sess, Group group, List<String> attrNames) throws InternalErrorException {
 
 		MapSqlParameterSource parameters = new MapSqlParameterSource();
@@ -1054,6 +1091,30 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
+	public List<Attribute> getAttributes(PerunSession sess, Resource resource, List<String> attrNames) throws InternalErrorException {
+
+		MapSqlParameterSource parameters = new MapSqlParameterSource();
+		parameters.addValue("rId", resource.getId());
+		parameters.addValue("nSC", AttributesManager.NS_RESOURCE_ATTR_CORE);
+		parameters.addValue("nSO", AttributesManager.NS_RESOURCE_ATTR_OPT);
+		parameters.addValue("nSD", AttributesManager.NS_RESOURCE_ATTR_DEF);
+		parameters.addValue("nSV", AttributesManager.NS_RESOURCE_ATTR_VIRT);
+		parameters.addValue("attrNames", attrNames);
+
+		try {
+			return namedParameterJdbcTemplate.query("select " + getAttributeMappingSelectQuery("resattr") + " from attr_names " +
+							"left join resource_attr_values resattr on id=resattr.attr_id and resource_id=:rId " +
+							"where namespace in ( :nSC,:nSO,:nSD,:nSV ) and attr_names.attr_name in ( :attrNames )",
+					parameters, new SingleBeanAttributeRowMapper<>(sess, this, resource));
+		} catch (EmptyResultDataAccessException ex) {
+			return new ArrayList<>();
+		} catch (RuntimeException ex) {
+			throw new InternalErrorException(ex);
+		}
+	}
+
+	@Override
 	public List<Attribute> getAttributes(PerunSession sess, Facility facility, User user) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("usr_fac") + " from attr_names " +
@@ -1069,6 +1130,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getUserFacilityAttributesForAnyUser(PerunSession sess, Facility facility) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("usr_fac") + " from attr_names " +
@@ -1085,6 +1147,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 	}
 
 
+	@Override
 	public List<Attribute> getAttributes(PerunSession sess, User user) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("usr") + " from attr_names " +
@@ -1100,6 +1163,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getAttributes(PerunSession sess, User user, List<String> attrNames) throws InternalErrorException {
 
 		MapSqlParameterSource parameters = new MapSqlParameterSource();
@@ -1124,6 +1188,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 
 
+	@Override
 	public List<Attribute> getAttributes(PerunSession sess, UserExtSource ues, List<String> attrNames) throws InternalErrorException {
 
 		MapSqlParameterSource parameters = new MapSqlParameterSource();
@@ -1147,6 +1212,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 	}
 
 
+	@Override
 	public List<Attribute> getAttributes(PerunSession sess, Resource resource, Group group) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("grp_res") + " from attr_names " +
@@ -1162,6 +1228,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getAttributes(PerunSession sess, String key) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("enattr") + " from attr_names " +
@@ -1175,6 +1242,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getAttributes(PerunSession sess, UserExtSource ues) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("ues") + " from attr_names " +
@@ -1190,6 +1258,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public String getEntitylessAttrValueForUpdate(PerunSession sess, int attrId, String key) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			return jdbc.queryForObject("SELECT attr_value, attr_value_text FROM entityless_attr_values WHERE subject=? AND attr_id=? FOR UPDATE", ATTRIBUTE_VALUES_MAPPER, key, attrId);
@@ -1203,6 +1272,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getEntitylessAttributes(PerunSession sess, String attrName) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("enattr") + " from attr_names " +
@@ -1216,6 +1286,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<String> getEntitylessKeys(PerunSession sess, AttributeDefinition attributeDefinition) throws InternalErrorException {
 		try {
 			return jdbc.query("SELECT subject FROM attr_names JOIN entityless_attr_values ON id=attr_id  WHERE attr_name=?", ENTITYLESS_KEYS_MAPPER, attributeDefinition.getName());
@@ -1226,6 +1297,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getAttributesByAttributeDefinition(PerunSession sess, AttributeDefinition attributeDefinition) throws InternalErrorException {
 		// Get the entity from the name
 		String entity = attributeDefinition.getEntity();
@@ -1238,6 +1310,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<RichAttribute<User, Facility>> getAllUserFacilityRichAttributes(PerunSession sess, User user) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("usr_fac") + ", " + UsersManagerImpl.userMappingSelectQuery + ", " + FacilitiesManagerImpl.facilityMappingSelectQuery + "   from attr_names " +
@@ -1256,6 +1329,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttribute(PerunSession sess, Facility facility, String attributeName) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("facility_attr_values") + " from attr_names left join facility_attr_values on id=attr_id and facility_id=? where attr_name=?", new SingleBeanAttributeRowMapper<>(sess, this, facility), facility.getId(), attributeName);
@@ -1266,6 +1340,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<String> getAllSimilarAttributeNames(PerunSession sess, String startingPartOfAttributeName) throws InternalErrorException {
 		try {
 			return jdbc.query("SELECT attr_name FROM attr_names WHERE attr_name LIKE ? || '%'", ATTRIBUTE_NAMES_MAPPER, startingPartOfAttributeName);
@@ -1276,6 +1351,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttribute(PerunSession sess, Vo vo, String attributeName) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("vo_attr_values") + " from attr_names left join vo_attr_values on id=attr_id and vo_id=? where attr_name=?", new SingleBeanAttributeRowMapper<>(sess, this, vo), vo.getId(), attributeName);
@@ -1286,6 +1362,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttribute(PerunSession sess, Group group, String attributeName) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("group_attr_values") + " from attr_names left join group_attr_values on id=attr_id and group_id=? where attr_name=?", new SingleBeanAttributeRowMapper<>(sess, this, group), group.getId(), attributeName);
@@ -1296,6 +1373,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttribute(PerunSession sess, Resource resource, String attributeName) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("resource_attr_values") + " from attr_names left join resource_attr_values on id=attr_id and resource_id=? where attr_name=?", new SingleBeanAttributeRowMapper<>(sess, this, resource), resource.getId(), attributeName);
@@ -1306,6 +1384,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttribute(PerunSession sess, Resource resource, Member member, String attributeName) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			//member-resource attributes, member core attributes
@@ -1338,6 +1417,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttribute(PerunSession sess, Member member, String attributeName) throws InternalErrorException, AttributeNotExistsException {
 		//member and member core attributes
 		try {
@@ -1352,6 +1432,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttribute(PerunSession sess, Facility facility, User user, String attributeName) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("usr_fac") + " from attr_names " +
@@ -1365,6 +1446,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttribute(PerunSession sess, User user, String attributeName) throws InternalErrorException, AttributeNotExistsException {
 		//user and user core attributes
 		try {
@@ -1380,6 +1462,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 	}
 
 
+	@Override
 	public Attribute getAttribute(PerunSession sess, Host host, String attributeName) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("host_attr_values") + " from attr_names " +
@@ -1391,6 +1474,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttribute(PerunSession sess, Resource resource, Group group, String attributeName) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("grp_res") + " from attr_names " +
@@ -1404,6 +1488,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttribute(PerunSession sess, String key, String attributeName) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("entityless_attr_values") + " from attr_names " +
@@ -1433,6 +1518,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttribute(PerunSession sess, UserExtSource ues, String attributeName) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("user_ext_source_attr_values") + " from attr_names " +
@@ -1446,6 +1532,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public AttributeDefinition getAttributeDefinition(PerunSession sess, String attributeName) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			return jdbc.queryForObject("SELECT " + attributeDefinitionMappingSelectQuery + " FROM attr_names WHERE attr_name=?", ATTRIBUTE_DEFINITION_MAPPER, attributeName);
@@ -1456,6 +1543,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<AttributeDefinition> getAttributesDefinition(PerunSession sess) throws InternalErrorException {
 		try {
 			return jdbc.query("SELECT " + attributeDefinitionMappingSelectQuery + ", NULL AS attr_value FROM attr_names", ATTRIBUTE_DEFINITION_MAPPER);
@@ -1467,6 +1555,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<AttributeDefinition> getAttributesDefinitionByNamespace(PerunSession sess, String namespace) throws InternalErrorException {
 		try {
 			return jdbc.query("SELECT " + attributeDefinitionMappingSelectQuery + ", NULL AS attr_value FROM attr_names WHERE namespace=?", ATTRIBUTE_DEFINITION_MAPPER, namespace);
@@ -1478,6 +1567,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public AttributeDefinition getAttributeDefinitionById(PerunSession sess, int id) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			return jdbc.queryForObject("SELECT " + attributeDefinitionMappingSelectQuery + " FROM attr_names WHERE id=?", ATTRIBUTE_DEFINITION_MAPPER, id);
@@ -1488,6 +1578,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttributeById(PerunSession sess, Facility facility, int id) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("facility_attr_values") + " from attr_names left join facility_attr_values on id=attr_id and facility_id=? where id=?", new SingleBeanAttributeRowMapper<>(sess, this, facility), facility.getId(), id);
@@ -1498,6 +1589,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttributeById(PerunSession sess, Vo vo, int id) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("vo_attr_values") + " from attr_names left join vo_attr_values on id=attr_id and vo_id=? where id=?", new SingleBeanAttributeRowMapper<>(sess, this, vo), vo.getId(), id);
@@ -1508,6 +1600,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttributeById(PerunSession sess, Resource resource, int id) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("resource_attr_values") + " from attr_names left join resource_attr_values on id=attr_id and resource_id=? where id=?", new SingleBeanAttributeRowMapper<>(sess, this, resource), resource.getId(), id);
@@ -1518,6 +1611,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttributeById(PerunSession sess, Resource resource, Group group, int id) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("grp_res") + " from attr_names " +
@@ -1531,6 +1625,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttributeById(PerunSession sess, Group group, int id) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("grp") + " from attr_names " +
@@ -1544,6 +1639,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttributeById(PerunSession sess, Host host, int id) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("host_attr_values") + " from attr_names left join host_attr_values on id=attr_id and host_id=? where id=?", new SingleBeanAttributeRowMapper<>(sess, this, host), host.getId(), id);
@@ -1555,6 +1651,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 	}
 
 
+	@Override
 	public Attribute getAttributeById(PerunSession sess, Resource resource, Member member, int id) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			//member-resource attributes, member core attributes
@@ -1584,6 +1681,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttributeById(PerunSession sess, Member member, int id) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			//member and member core attributes
@@ -1598,6 +1696,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttributeById(PerunSession sess, Facility facility, User user, int id) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("usr_fac") + " from attr_names " +
@@ -1611,6 +1710,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttributeById(PerunSession sess, User user, int id) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			//user and user core attributes
@@ -1625,6 +1725,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute getAttributeById(PerunSession sess, UserExtSource ues, int id) throws InternalErrorException, AttributeNotExistsException {
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("ues") + " from attr_names left join user_ext_source_attr_values ues on id=ues.attr_id and user_ext_source_id=? where id=?", new SingleBeanAttributeRowMapper<>(sess, this, ues), ues.getId(), id);
@@ -1923,26 +2024,32 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public boolean setVirtualAttribute(PerunSession sess, Facility facility, Attribute attribute) throws InternalErrorException, WrongReferenceAttributeValueException {
 		return getFacilityVirtualAttributeModule(sess, attribute).setAttributeValue((PerunSessionImpl) sess, facility, attribute);
 	}
 
+	@Override
 	public boolean setVirtualAttribute(PerunSession sess, Member member, Attribute attribute) throws InternalErrorException, WrongReferenceAttributeValueException {
 		return getMemberVirtualAttributeModule(sess, attribute).setAttributeValue((PerunSessionImpl) sess, member, attribute);
 	}
 
+	@Override
 	public boolean setVirtualAttribute(PerunSession sess, Resource resource, Attribute attribute) throws InternalErrorException, WrongReferenceAttributeValueException {
 		return getResourceVirtualAttributeModule(sess, attribute).setAttributeValue((PerunSessionImpl) sess, resource, attribute);
 	}
 
+	@Override
 	public boolean setVirtualAttribute(PerunSession sess, Group group, Attribute attribute) throws InternalErrorException, WrongReferenceAttributeValueException {
 		return getGroupVirtualAttributeModule(sess, attribute).setAttributeValue((PerunSessionImpl) sess, group, attribute);
 	}
 
+	@Override
 	public boolean setVirtualAttribute(PerunSession sess, Facility facility, User user, Attribute attribute) throws InternalErrorException, WrongReferenceAttributeValueException {
 		return getFacilityUserVirtualAttributeModule(sess, attribute).setAttributeValue((PerunSessionImpl) sess, facility, user, attribute);
 	}
 
+	@Override
 	public boolean setVirtualAttribute(PerunSession sess, Resource resource, Group group, Attribute attribute) throws InternalErrorException, WrongReferenceAttributeValueException {
 		return getResourceGroupVirtualAttributeModule(sess, attribute).setAttributeValue((PerunSessionImpl) sess, resource, group, attribute);
 	}
@@ -1952,14 +2059,17 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		return getMemberGroupVirtualAttributeModule(sess, attribute).setAttributeValue((PerunSessionImpl) sess, member, group, attribute);
 	}
 
+	@Override
 	public boolean setVirtualAttribute(PerunSession sess, User user, Attribute attribute) throws InternalErrorException, WrongReferenceAttributeValueException {
 		return getUserVirtualAttributeModule(sess, attribute).setAttributeValue((PerunSessionImpl) sess, user, attribute);
 	}
 
+	@Override
 	public boolean setVirtualAttribute(PerunSession sess, UserExtSource ues, Attribute attribute) throws InternalErrorException, WrongReferenceAttributeValueException {
 		return getUserExtSourceVirtualAttributeModule(sess, attribute).setAttributeValue((PerunSessionImpl) sess, ues, attribute);
 	}
 
+	@Override
 	public AttributeDefinition createAttribute(PerunSession sess, AttributeDefinition attribute) throws InternalErrorException, AttributeDefinitionExistsException {
 		if (!attribute.getFriendlyName().matches(AttributesManager.ATTRIBUTES_REGEXP)) {
 			throw new InternalErrorException(new IllegalArgumentException("Wrong attribute name " + attribute.getFriendlyName() + ", attribute name must match " + AttributesManager.ATTRIBUTES_REGEXP));
@@ -1994,6 +2104,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		return ENTITIES_TO_BEANS_MAP.get(attributeDefinition.getNamespace().split(":")[2]);
 	}
 
+	@Override
 	public void deleteAttribute(PerunSession sess, AttributeDefinition attribute) throws InternalErrorException {
 		try {
 
@@ -2005,6 +2116,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void deleteAllAttributeAuthz(PerunSession sess, AttributeDefinition attribute) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM attributes_authz WHERE attr_id=?", attribute.getId())) {
@@ -2015,6 +2127,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<AttributeDefinition> getResourceRequiredAttributesDefinition(PerunSession sess, Resource resource) throws InternalErrorException {
 		try {
 			return jdbc.query("SELECT DISTINCT " + attributeDefinitionMappingSelectQuery + " FROM resource_services " +
@@ -2030,6 +2143,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Resource resource, Facility facility) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("facility_attr_values") + " from attr_names " +
@@ -2047,6 +2161,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Resource resourceToGetServicesFrom, Resource resource) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("resource_attr_values") + " from attr_names " +
@@ -2064,6 +2179,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Resource resourceToGetServicesFrom, Member member) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("member_attr_values") + " from attr_names " +
@@ -2081,6 +2197,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Resource resourceToGetServicesFrom, Resource resource, Member member) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("mem") + " from attr_names " +
@@ -2096,6 +2213,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Resource resource, Facility facility, User user) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("usr") + " from attr_names " +
@@ -2111,6 +2229,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Resource resourceToGetServicesFrom, Resource resource, Group group) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("grp") + " from attr_names " +
@@ -2126,6 +2245,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Resource resource, User user) throws InternalErrorException {
 		try {
 			//user and user core attributes
@@ -2142,6 +2262,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Resource resourceToGetServicesFrom, Host host) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("host") + " from attr_names " +
@@ -2157,6 +2278,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Resource resourceToGetServicesFrom, Group group) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("grp") + " from attr_names " +
@@ -2172,6 +2294,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<AttributeDefinition> getRequiredAttributesDefinition(PerunSession sess, Service service) throws InternalErrorException {
 		try {
 			return jdbc.query("SELECT " + attributeDefinitionMappingSelectQuery + " FROM attr_names, service_required_attrs WHERE id=attr_id AND service_id=?", ATTRIBUTE_DEFINITION_MAPPER, service.getId());
@@ -2183,6 +2306,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Service service, Facility facility) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("facility_attr_values") + " from attr_names " +
@@ -2199,6 +2323,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Service service, Vo vo) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("vo_attr_values") + " from attr_names " +
@@ -2215,6 +2340,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Service service, Resource resource) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("resource_attr_values") + " from attr_names " +
@@ -2231,6 +2357,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Resource resource, List<Integer> serviceIds) throws InternalErrorException {
 		try {
 			List<String> namespace = new ArrayList<>();
@@ -2258,6 +2385,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Service service, Resource resource, Member member) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("mem") + " from attr_names " +
@@ -2301,6 +2429,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Service service, Member member) throws InternalErrorException {
 		//member and member core attributes
 		try {
@@ -2316,6 +2445,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Service service, Facility facility, User user) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("usr_fac") + " from attr_names " +
@@ -2330,6 +2460,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Service service, Resource resource, Group group) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("grp_res") + " from attr_names " +
@@ -2344,6 +2475,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Service service, User user) throws InternalErrorException {
 		//user and user core attributes
 		try {
@@ -2395,6 +2527,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 			this.resource = resource;
 		}
 
+		@Override
 		public HashMap<Member, List<Attribute>> extractData(ResultSet rs) throws SQLException, DataAccessException {
 			HashMap<Member, List<Attribute>> map = new HashMap<>();
 			HashMap<Integer, Member> memberObjectMap = new HashMap<>();
@@ -2451,6 +2584,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 			this(sess, attributesManager, users, null);
 		}
 
+		@Override
 		public HashMap<User, List<Attribute>> extractData(ResultSet rs) throws SQLException, DataAccessException {
 			HashMap<User, List<Attribute>> map = new HashMap<>();
 			HashMap<Integer, User> userObjectMap = new HashMap<>();
@@ -2479,6 +2613,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public HashMap<Member, List<Attribute>> getRequiredAttributes(PerunSession sess, Service service, Resource resource, List<Member> members) throws InternalErrorException {
 		try {
 			return jdbc.query("SELECT " + getAttributeMappingSelectQuery("mem") + ", members.id FROM attr_names " +
@@ -2493,6 +2628,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public HashMap<Member, List<Attribute>> getRequiredAttributes(PerunSession sess, Resource resource, Service service, List<Member> members) throws InternalErrorException {
 		try {
 			return jdbc.query("SELECT " + getAttributeMappingSelectQuery("mem") + ", members.id FROM attr_names " +
@@ -2509,6 +2645,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public HashMap<User, List<Attribute>> getRequiredAttributes(PerunSession sess, Service service, Facility facility, List<User> users) throws InternalErrorException {
 		try {
 			return jdbc.query("SELECT " + getAttributeMappingSelectQuery("usr_fac") + ", users.id FROM attr_names " +
@@ -2524,6 +2661,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public HashMap<User, List<Attribute>> getRequiredAttributes(PerunSession sess, Service service, List<User> users) throws InternalErrorException {
 		//user and user core attributes
 		try {
@@ -2540,6 +2678,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Service service, Host host) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("host") + " from attr_names " +
@@ -2554,6 +2693,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Service service, Group group) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("grp") + " from attr_names " +
@@ -2568,6 +2708,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Facility facility) throws InternalErrorException {
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("facility_attr_values") + " from attr_names " +
@@ -2585,6 +2726,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute fillAttribute(PerunSession sess, Resource resource, Attribute attribute) throws InternalErrorException {
 		//Use attributes module
 		ResourceAttributesModuleImplApi attributeModule = getResourceAttributeModule(sess, attribute);
@@ -2600,6 +2742,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute fillAttribute(PerunSession sess, Resource resource, Member member, Attribute attribute) throws InternalErrorException {
 		//Use attributes module
 		ResourceMemberAttributesModuleImplApi attributeModule = getResourceMemberAttributeModule(sess, attribute);
@@ -2631,6 +2774,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute fillAttribute(PerunSession sess, Facility facility, User user, Attribute attribute) throws InternalErrorException {
 		//Use attributes module
 		FacilityUserAttributesModuleImplApi attributeModule = getFacilityUserAttributeModule(sess, attribute);
@@ -2646,6 +2790,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute fillAttribute(PerunSession sess, User user, Attribute attribute) throws InternalErrorException {
 		UserAttributesModuleImplApi attributeModule = getUserAttributeModule(sess, attribute);
 		if (attributeModule == null) {
@@ -2659,6 +2804,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute fillAttribute(PerunSession sess, Member member, Attribute attribute) throws InternalErrorException {
 		MemberAttributesModuleImplApi attributeModule = getMemberAttributeModule(sess, attribute);
 		if (attributeModule == null) {
@@ -2672,6 +2818,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute fillAttribute(PerunSession sess, Resource resource, Group group, Attribute attribute) throws InternalErrorException {
 		ResourceGroupAttributesModuleImplApi attributeModule = getResourceGroupAttributeModule(sess, attribute);
 		if (attributeModule == null) {
@@ -2685,6 +2832,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute fillAttribute(PerunSession sess, Host host, Attribute attribute) throws InternalErrorException {
 		HostAttributesModuleImplApi attributeModule = getHostAttributeModule(sess, attribute);
 		if (attributeModule == null) {
@@ -2698,6 +2846,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute fillAttribute(PerunSession sess, Group group, Attribute attribute) throws InternalErrorException {
 		GroupAttributesModuleImplApi attributeModule = getGroupAttributeModule(sess, attribute);
 		if (attributeModule == null) {
@@ -2711,6 +2860,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public Attribute fillAttribute(PerunSession sess, UserExtSource ues, Attribute attribute) throws InternalErrorException {
 		UserExtSourceAttributesModuleImplApi attributeModule = getUserExtSourceAttributeModule(sess, attribute);
 		if (attributeModule == null) {
@@ -2724,6 +2874,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void changedAttributeHook(PerunSession sess, Facility facility, Attribute attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		//Call attribute module
 		FacilityAttributesModuleImplApi facilityModule = getFacilityAttributeModule(sess, attribute);
@@ -2735,6 +2886,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void changedAttributeHook(PerunSession sess, String key, Attribute attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		//Call attribute module
 		EntitylessAttributesModuleImplApi entitylessModule = getEntitylessAttributeModule(sess, attribute);
@@ -2746,6 +2898,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void changedAttributeHook(PerunSession sess, Host host, Attribute attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		//Call attribute module
 		HostAttributesModuleImplApi hostModule = getHostAttributeModule(sess, attribute);
@@ -2757,6 +2910,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void changedAttributeHook(PerunSession sess, Vo vo, Attribute attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		//Call attribute module
 		VoAttributesModuleImplApi voModule = getVoAttributeModule(sess, attribute);
@@ -2768,6 +2922,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void changedAttributeHook(PerunSession sess, Group group, Attribute attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		//Call attribute module
 		GroupAttributesModuleImplApi groupModule = getGroupAttributeModule(sess, attribute);
@@ -2779,6 +2934,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void changedAttributeHook(PerunSession sess, User user, Attribute attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		//Call attribute module
 		UserAttributesModuleImplApi userModule = getUserAttributeModule(sess, attribute);
@@ -2790,6 +2946,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void changedAttributeHook(PerunSession sess, Member member, Attribute attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		//Call attribute module
 		MemberAttributesModuleImplApi memberModule = getMemberAttributeModule(sess, attribute);
@@ -2801,6 +2958,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void changedAttributeHook(PerunSession sess, Resource resource, Group group, Attribute attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		//Call attribute module
 		ResourceGroupAttributesModuleImplApi resourceGroupModule = getResourceGroupAttributeModule(sess, attribute);
@@ -2812,6 +2970,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void changedAttributeHook(PerunSession sess, Resource resource, Attribute attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		//Call attribute module
 		ResourceAttributesModuleImplApi resourceModule = getResourceAttributeModule(sess, attribute);
@@ -2823,6 +2982,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void changedAttributeHook(PerunSession sess, Resource resource, Member member, Attribute attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		//Call attribute module
 		ResourceMemberAttributesModuleImplApi resourceMemberGroupModule = getResourceMemberAttributeModule(sess, attribute);
@@ -2846,6 +3006,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void changedAttributeHook(PerunSession sess, Facility facility, User user, Attribute attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		//Call attribute module
 		FacilityUserAttributesModuleImplApi facilityUserModule = getFacilityUserAttributeModule(sess, attribute);
@@ -2857,6 +3018,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void changedAttributeHook(PerunSession sess, UserExtSource ues, Attribute attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		//Call attribute module
 		UserExtSourceAttributesModuleImplApi uesModule = getUserExtSourceAttributeModule(sess, attribute);
@@ -2868,6 +3030,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void checkAttributeValue(PerunSession sess, Facility facility, Attribute attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		//Call attribute module
 		FacilityAttributesModuleImplApi facilityModule = getFacilityAttributeModule(sess, attribute);
@@ -2880,6 +3043,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 	}
 
+	@Override
 	public void checkAttributeValue(PerunSession sess, Vo vo, Attribute attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		//Call attribute module
 		VoAttributesModuleImplApi voModule = getVoAttributeModule(sess, attribute);
@@ -2891,6 +3055,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void checkAttributeValue(PerunSession sess, Group group, Attribute attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		//Call attribute module
 		GroupAttributesModuleImplApi groupModule = getGroupAttributeModule(sess, attribute);
@@ -2902,6 +3067,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void checkAttributeValue(PerunSession sess, Resource resource, Attribute attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		ResourceAttributesModuleImplApi attributeModule = getResourceAttributeModule(sess, attribute);
 		if (attributeModule == null) return;
@@ -2919,6 +3085,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void checkAttributeValue(PerunSession sess, Resource resource, Member member, Attribute attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		//Call attribute module
 		ResourceMemberAttributesModuleImplApi resourceMemberGroupModule = getResourceMemberAttributeModule(sess, attribute);
@@ -2942,6 +3109,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void checkAttributeValue(PerunSession sess, Facility facility, User user, Attribute attribute) throws InternalErrorException, WrongReferenceAttributeValueException, WrongAttributeValueException {
 		FacilityUserAttributesModuleImplApi attributeModule = getFacilityUserAttributeModule(sess, attribute);
 		if (attributeModule == null) return;
@@ -2952,6 +3120,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void checkAttributeValue(PerunSession sess, User user, Attribute attribute) throws InternalErrorException, WrongReferenceAttributeValueException, WrongAttributeValueException {
 		UserAttributesModuleImplApi attributeModule = getUserAttributeModule(sess, attribute);
 		if (attributeModule == null) return;
@@ -2962,6 +3131,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void checkAttributeValue(PerunSession sess, Member member, Attribute attribute) throws InternalErrorException, WrongReferenceAttributeValueException, WrongAttributeValueException {
 		MemberAttributesModuleImplApi attributeModule = getMemberAttributeModule(sess, attribute);
 		if (attributeModule == null) return;
@@ -2972,6 +3142,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void checkAttributeValue(PerunSession sess, UserExtSource ues, Attribute attribute) throws InternalErrorException, WrongReferenceAttributeValueException, WrongAttributeValueException {
 		UserExtSourceAttributesModuleImplApi attributeModule = getUserExtSourceAttributeModule(sess, attribute);
 		if (attributeModule == null) return;
@@ -2982,6 +3153,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void checkAttributeValue(PerunSession sess, Host host, Attribute attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		HostAttributesModuleImplApi attributeModule = getHostAttributeModule(sess, attribute);
 		if (attributeModule == null) return;
@@ -2992,6 +3164,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void checkAttributeValue(PerunSession sess, Resource resource, Group group, Attribute attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		ResourceGroupAttributesModuleImplApi attributeModule = getResourceGroupAttributeModule(sess, attribute);
 		if (attributeModule == null) return;
@@ -3002,6 +3175,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void checkAttributeValue(PerunSession sess, String key, Attribute attribute) throws InternalErrorException, WrongReferenceAttributeValueException, WrongAttributeValueException {
 		EntitylessAttributesModuleImplApi attributeModule = getEntitylessAttributeModule(sess, attribute);
 		if (attributeModule == null) return;
@@ -3012,6 +3186,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public boolean removeAttribute(PerunSession sess, String key, AttributeDefinition attribute) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM entityless_attr_values WHERE attr_id=? AND subject=?", attribute.getId(), key)) {
@@ -3024,6 +3199,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void removeAllGroupResourceAttributes(PerunSession sess, Resource resource) throws InternalErrorException {
 		try {
 			jdbc.update("DELETE FROM group_resource_attr_values WHERE resource_id=?", resource.getId());
@@ -3032,6 +3208,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void removeAllMemberResourceAttributes(PerunSession sess, Resource resource) throws InternalErrorException {
 		try {
 			jdbc.update("DELETE FROM member_resource_attr_values WHERE resource_id=?", resource.getId());
@@ -3040,6 +3217,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public boolean removeAttribute(PerunSession sess, Facility facility, AttributeDefinition attribute) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM facility_attr_values WHERE attr_id=? AND facility_id=?", attribute.getId(), facility.getId())) {
@@ -3052,6 +3230,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void removeAllAttributes(PerunSession sess, Facility facility) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM facility_attr_values WHERE facility_id=?", facility.getId())) {
@@ -3062,6 +3241,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public boolean removeAttribute(PerunSession sess, Vo vo, AttributeDefinition attribute) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM vo_attr_values WHERE attr_id=? AND vo_id=?", attribute.getId(), vo.getId())) {
@@ -3074,6 +3254,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void removeAllAttributes(PerunSession sess, Vo vo) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM vo_attr_values WHERE vo_id=?", vo.getId())) {
@@ -3084,6 +3265,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public boolean removeAttribute(PerunSession sess, Group group, AttributeDefinition attribute) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM group_attr_values WHERE attr_id=? AND group_id=?", attribute.getId(), group.getId())) {
@@ -3096,6 +3278,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void removeAllAttributes(PerunSession sess, Group group) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM group_attr_values WHERE group_id=?", group.getId())) {
@@ -3106,6 +3289,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public boolean removeAttribute(PerunSession sess, Resource resource, AttributeDefinition attribute) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM resource_attr_values WHERE attr_id=? AND resource_id=?", attribute.getId(), resource.getId())) {
@@ -3118,6 +3302,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void removeAllAttributes(PerunSession sess, Resource resource) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM resource_attr_values WHERE resource_id=?", resource.getId())) {
@@ -3128,6 +3313,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public boolean removeAttribute(PerunSession sess, Resource resource, Member member, AttributeDefinition attribute) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM member_resource_attr_values WHERE attr_id=? AND member_id=? AND resource_id=?", attribute.getId(), member.getId(), resource.getId())) {
@@ -3140,6 +3326,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void removeAllAttributes(PerunSession sess, Resource resource, Member member) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM member_resource_attr_values WHERE resource_id=? AND member_id=?", resource.getId(), member.getId())) {
@@ -3174,6 +3361,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public boolean removeAttribute(PerunSession sess, Member member, AttributeDefinition attribute) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM member_attr_values WHERE attr_id=? AND member_id=?", attribute.getId(), member.getId())) {
@@ -3186,6 +3374,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void removeAllAttributes(PerunSession sess, Member member) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM member_attr_values WHERE member_id=?", member.getId())) {
@@ -3196,6 +3385,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public boolean removeAttribute(PerunSession sess, Facility facility, User user, AttributeDefinition attribute) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM user_facility_attr_values WHERE attr_id=? AND user_id=? AND facility_id=?", attribute.getId(), user.getId(), facility.getId())) {
@@ -3209,6 +3399,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 	}
 
+	@Override
 	public void removeAllAttributes(PerunSession sess, Facility facility, User user) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM user_facility_attr_values WHERE user_id=? AND facility_id=?", user.getId(), facility.getId())) {
@@ -3219,6 +3410,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void removeAllUserFacilityAttributesForAnyUser(PerunSession sess, Facility facility) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM user_facility_attr_values WHERE facility_id=?", facility.getId())) {
@@ -3229,6 +3421,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void removeAllUserFacilityAttributes(PerunSession sess, User user) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM user_facility_attr_values WHERE user_id=?", user.getId())) {
@@ -3239,18 +3432,22 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public boolean removeVirtualAttribute(PerunSession sess, Facility facility, User user, AttributeDefinition attribute) throws InternalErrorException {
 		return getFacilityUserVirtualAttributeModule(sess, attribute).removeAttributeValue((PerunSessionImpl) sess, facility, user, attribute);
 	}
 
+	@Override
 	public boolean removeVirtualAttribute(PerunSession sess, Resource resource, AttributeDefinition attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		return getResourceVirtualAttributeModule(sess, attribute).removeAttributeValue((PerunSessionImpl) sess, resource, attribute);
 	}
 
+	@Override
 	public boolean removeVirtualAttribute(PerunSession sess, Resource resource, Group group, AttributeDefinition attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
 		return getResourceGroupVirtualAttributeModule(sess, attribute).removeAttributeValue((PerunSessionImpl) sess, resource, group, attribute);
 	}
 
+	@Override
 	public boolean removeAttribute(PerunSession sess, User user, AttributeDefinition attribute) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM user_attr_values WHERE attr_id=? AND user_id=?", attribute.getId(), user.getId())) {
@@ -3263,6 +3460,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void removeAllAttributes(PerunSession sess, User user) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM user_attr_values WHERE user_id=?", user.getId())) {
@@ -3273,6 +3471,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public boolean removeAttribute(PerunSession sess, Resource resource, Group group, AttributeDefinition attribute) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM group_resource_attr_values WHERE attr_id=? AND resource_id=? AND group_id=?", attribute.getId(), resource.getId(), group.getId())) {
@@ -3285,6 +3484,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void removeAllAttributes(PerunSession sess, Resource resource, Group group) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM group_resource_attr_values WHERE group_id=? AND resource_id=?", group.getId(), resource.getId())) {
@@ -3295,6 +3495,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public boolean removeAttribute(PerunSession sess, Host host, AttributeDefinition attribute) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM host_attr_values WHERE attr_id=? AND host_id=?", attribute.getId(), host.getId())) {
@@ -3307,6 +3508,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void removeAllAttributes(PerunSession sess, Host host) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM host_attr_values WHERE host_id=?", host.getId())) {
@@ -3317,6 +3519,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public boolean removeAttribute(PerunSession sess, UserExtSource ues, AttributeDefinition attribute) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM user_ext_source_attr_values WHERE attr_id=? AND user_ext_source_id=?", attribute.getId(), ues.getId())) {
@@ -3329,6 +3532,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void removeAllAttributes(PerunSession sess, UserExtSource ues) throws InternalErrorException {
 		try {
 			if (0 < jdbc.update("DELETE FROM user_ext_source_attr_values WHERE user_ext_source_id=?", ues.getId())) {
@@ -3339,6 +3543,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public boolean attributeExists(PerunSession sess, AttributeDefinition attribute) throws InternalErrorException {
 		Utils.notNull(attribute, "attribute");
 		Utils.notNull(attribute.getName(), "attribute.name");
@@ -3363,10 +3568,12 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void checkActionTypeExists(PerunSession sess, ActionType actionType) throws InternalErrorException, ActionTypeNotExistsException {
 		if (!actionTypeExists(actionType)) throw new ActionTypeNotExistsException("ActionType: " + actionType);
 	}
 
+	@Override
 	public void checkAttributeExists(PerunSession sess, AttributeDefinition attribute) throws InternalErrorException, AttributeNotExistsException {
 		if (!attributeExists(sess, attribute)) throw new AttributeNotExistsException("Attribute: " + attribute);
 	}
@@ -3376,6 +3583,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		checkNamespace(sess, attribute, expectedNamespace);
 	}
 
+	@Override
 	public void checkAttributesExists(PerunSession sess, List<? extends AttributeDefinition> attributes) throws InternalErrorException, AttributeNotExistsException {
 		Utils.notNull(attributes, "attributes");
 		for (AttributeDefinition attribute : attributes) {
@@ -3391,6 +3599,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public boolean isCoreAttribute(PerunSession sess, AttributeDefinition attribute) {
 		if (attribute == null)
 			throw new InternalErrorRuntimeException(new NullPointerException("Attribute attribute is null"));
@@ -3399,6 +3608,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		return attribute.getNamespace().endsWith(":core");
 	}
 
+	@Override
 	public boolean isDefAttribute(PerunSession sess, AttributeDefinition attribute) {
 		if (attribute == null)
 			throw new InternalErrorRuntimeException(new NullPointerException("Attribute attribute is null"));
@@ -3407,6 +3617,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		return attribute.getNamespace().endsWith(":def");
 	}
 
+	@Override
 	public boolean isOptAttribute(PerunSession sess, AttributeDefinition attribute) {
 		if (attribute == null)
 			throw new InternalErrorRuntimeException(new NullPointerException("Attribute attribute is null"));
@@ -3415,6 +3626,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		return attribute.getNamespace().endsWith(":opt");
 	}
 
+	@Override
 	public boolean isCoreManagedAttribute(PerunSession sess, AttributeDefinition attribute) {
 		if (attribute == null)
 			throw new InternalErrorRuntimeException(new NullPointerException("Attribute attribute is null"));
@@ -3423,6 +3635,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		return attribute.getNamespace().matches("urn:perun:[^:]+:attribute-def:core-managed:[a-zA-Z]+Manager");
 	}
 
+	@Override
 	public boolean isVirtAttribute(PerunSession sess, AttributeDefinition attribute) {
 		if (attribute == null)
 			throw new InternalErrorRuntimeException(new NullPointerException("Attribute attribute is null"));
@@ -3431,6 +3644,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		return attribute.getNamespace().endsWith(":virt");
 	}
 
+	@Override
 	public boolean isFromNamespace(AttributeDefinition attribute, String namespace) {
 		if (attribute == null)
 			throw new InternalErrorRuntimeException(new NullPointerException("Attribute attribute is null"));
@@ -3439,16 +3653,19 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		return attribute.getNamespace().startsWith(namespace + ":") || attribute.getNamespace().equals(namespace);
 	}
 
+	@Override
 	public void checkNamespace(PerunSession sess, AttributeDefinition attribute, String namespace) throws WrongAttributeAssignmentException {
 		if (!isFromNamespace(attribute, namespace)) throw new WrongAttributeAssignmentException(attribute);
 	}
 
+	@Override
 	public void checkNamespace(PerunSession sess, List<? extends AttributeDefinition> attributes, String namespace) throws WrongAttributeAssignmentException {
 		for (AttributeDefinition attribute : attributes) {
 			checkNamespace(sess, attribute, namespace);
 		}
 	}
 
+	@Override
 	public List<Object> getAllResourceValues(PerunSession sess, AttributeDefinition attributeDefinition) throws InternalErrorException {
 		try {
 			return jdbc.query("SELECT attr_value FROM resource_attr_values WHERE attr_id=?", new ValueRowMapper(sess, attributeDefinition), attributeDefinition.getId());
@@ -3459,6 +3676,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Object> getAllGroupResourceValues(PerunSession sess, AttributeDefinition attributeDefinition) throws InternalErrorException {
 		try {
 			return jdbc.query("SELECT attr_value FROM group_resource_attr_values WHERE attr_id=?", new ValueRowMapper(sess, attributeDefinition), attributeDefinition.getId());
@@ -3469,6 +3687,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Object> getAllGroupValues(PerunSession sess, AttributeDefinition attributeDefinition) throws InternalErrorException {
 		try {
 			return jdbc.query("SELECT attr_value FROM group_attr_values WHERE attr_id=?", new ValueRowMapper(sess, attributeDefinition), attributeDefinition.getId());
@@ -3479,6 +3698,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public boolean isAttributeRequiredByFacility(PerunSession sess, Facility facility, AttributeDefinition attributeDefinition) throws InternalErrorException {
 		try {
 			return 0 < jdbc.queryForInt("select count(*) from service_required_attrs " +
@@ -3504,6 +3724,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public boolean isAttributeRequiredByGroup(PerunSession sess, Group group, AttributeDefinition attributeDefinition) throws InternalErrorException {
 		try {
 			return 0 < jdbc.queryForInt("select count(*) from service_required_attrs " +
@@ -3516,6 +3737,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public boolean isAttributeRequiredByResource(PerunSession sess, Resource resource, AttributeDefinition attributeDefinition) throws InternalErrorException {
 		try {
 			return 0 < jdbc.queryForInt("select count(*) from service_required_attrs " +
@@ -3971,6 +4193,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 	 * @param attribute get the attribute module for this attribute
 	 * @see #getAttributesModule(String)
 	 */
+	@Override
 	public Object getAttributesModule(PerunSession sess, AttributeDefinition attribute) throws InternalErrorException {
 		String moduleName;
 		//first try to find specific module including parameter of attribute (full friendly name)
@@ -4015,6 +4238,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 	}
 
+	@Override
 	public void initAttributeModules(ServiceLoader<AttributesModuleImplApi> modules) {
 		for (AttributesModuleImplApi module : modules) {
 			attributesModulesMap.put(module.getClass().getName(), module);
@@ -4022,6 +4246,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	@Override
 	public void registerVirtAttributeModules(ServiceLoader<AttributesModuleImplApi> modules) {
 		for (AttributesModuleImplApi module : modules) {
 			if (module instanceof VirtualAttributesModuleImplApi) {
@@ -4189,6 +4414,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		this.self = self;
 	}
 
+	@Override
 	public AttributeDefinition updateAttributeDefinition(PerunSession perunSession, AttributeDefinition attributeDefinition) throws InternalErrorException {
 		try {
 			Map<String, Object> map = jdbc.queryForMap("SELECT attr_name, friendly_name, namespace, type, dsc, display_name, is_unique FROM attr_names WHERE id=?", attributeDefinition.getId());
@@ -4237,6 +4463,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 			this.attributeId = attributeId;
 		}
 
+		@Override
 		public List<AttributeRights> extractData(ResultSet rs) throws SQLException, DataAccessException {
 
 			Map<Role, List<ActionType>> map = new HashMap<>();

@@ -9,10 +9,12 @@ import cz.metacentrum.perun.core.api.exceptions.AttributeNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.InternalErrorException;
 import cz.metacentrum.perun.core.api.exceptions.PerunException;
 import cz.metacentrum.perun.core.api.exceptions.PrivilegeException;
+import cz.metacentrum.perun.utils.graphs.GraphTextFormat;
 import cz.metacentrum.perun.rpc.ApiCaller;
 import cz.metacentrum.perun.rpc.ManagerMethod;
 import cz.metacentrum.perun.core.api.exceptions.RpcException;
 import cz.metacentrum.perun.rpc.deserializer.Deserializer;
+import guru.nidi.graphviz.engine.Graphviz;
 
 public enum AttributesManagerMethod implements ManagerMethod {
 
@@ -30,6 +32,15 @@ public enum AttributesManagerMethod implements ManagerMethod {
 	 *
 	 * @param facility int Facility <code>id</code>
 	 * @return List<Attribute> All non-empty Facility attributes
+	 * @throw FacilityNotExistsException When Facility with <code>id</code> doesn't exist.
+	 */
+	/*#
+	 * Returns all specified Facility attributes for selected Facility
+	 * If <code>attrNames</code> is empty, it returns empty list of attributes
+	 *
+	 * @param facility int Facility <code>id</code>
+	 * @param attrNames List<String> Attribute names
+	 * @return List<Attribute> Specified Facility attributes
 	 * @throw FacilityNotExistsException When Facility with <code>id</code> doesn't exist.
 	 */
 	/*#
@@ -254,8 +265,14 @@ public enum AttributesManagerMethod implements ManagerMethod {
 								ac.getUserById(parms.readInt("user")));
 					}
 				} else {
-					return ac.getAttributesManager().getAttributes(ac.getSession(),
-							ac.getFacilityById(parms.readInt("facility")));
+					if (parms.contains("attrNames")) {
+						return ac.getAttributesManager().getAttributes(ac.getSession(),
+								ac.getFacilityById(parms.readInt("facility")),
+								parms.readList("attrNames", String.class));
+					} else {
+						return ac.getAttributesManager().getAttributes(ac.getSession(),
+								ac.getFacilityById(parms.readInt("facility")));
+					}
 				}
 			} else if (parms.contains("vo")) {
 				if (parms.contains("attrNames")) {
@@ -307,8 +324,14 @@ public enum AttributesManagerMethod implements ManagerMethod {
 								ac.getGroupById(parms.readInt("group")));
 					}
 				} else {
-					return ac.getAttributesManager().getAttributes(ac.getSession(),
-							ac.getResourceById(parms.readInt("resource")));
+					if (parms.contains("attrNames")) {
+						return ac.getAttributesManager().getAttributes(ac.getSession(),
+								ac.getResourceById(parms.readInt("resource")),
+								parms.readList("attrNames", String.class));
+					} else {
+						return ac.getAttributesManager().getAttributes(ac.getSession(),
+								ac.getResourceById(parms.readInt("resource")));
+					}
 				}
 			} else if (parms.contains("member")) {
 				if (parms.contains("workWithUserAttributes")) {
@@ -1258,16 +1281,44 @@ public enum AttributesManagerMethod implements ManagerMethod {
 	 * @param attribute AttributeDefinition object
 	 * @return AttributeDefinition Created AttributeDefinition
 	 */
+	/*#
+	 * Creates AttributeDefinition
+	 *
+	 * @param friendlyName String friendlyName
+	 * @param namespace String namespace in URN format
+	 * @param description String description
+	 * @param type String type which is one of the: "java.lang.String", "java.lang.Integer", "java.lang.Boolean", "java.util.ArrayList",
+	 *                                              "java.util.LinkedHashMap", "java.lang.LargeString" or "java.util.LargeArrayList"
+	 * @param displayName String displayName
+	 * @param unique Boolean unique
+	 * @return AttributeDefinition Created AttributeDefinition
+	 * @exampleParam friendlyName "kerberosLogins"
+	 * @exampleParam namespace "urn:perun:user:attribute-def:def"
+	 * @exampleParam type "java.util.ArrayList"
+	 */
 	createAttribute {
 
 		@Override
 		public AttributeDefinition call(ApiCaller ac, Deserializer parms) throws PerunException {
 			ac.stateChangingCheck();
 
-			AttributeDefinition attribute = parms.read("attribute", AttributeDefinition.class);
+			if (parms.contains("attribute")) {
+				return ac.getAttributesManager().createAttribute(ac.getSession(),
+						parms.read("attribute", AttributeDefinition.class));
+			} else if (parms.contains("friendlyName") && parms.contains("namespace") && parms.contains("description") && parms.contains("type")
+					&& parms.contains("displayName") && parms.contains("unique")) {
 
-			return ac.getAttributesManager().createAttribute(ac.getSession(), attribute);
-
+				AttributeDefinition attribute = new AttributeDefinition();
+				attribute.setFriendlyName(parms.readString("friendlyName"));
+				attribute.setNamespace(parms.readString("namespace"));
+				attribute.setDescription(parms.readString("description"));
+				attribute.setType(parms.readString("type"));
+				attribute.setDisplayName(parms.readString("displayName"));
+				attribute.setUnique(parms.readBoolean("unique"));
+				return ac.getAttributesManager().createAttribute(ac.getSession(), attribute);
+			} else {
+				throw new RpcException(RpcException.Type.WRONG_PARAMETER);
+			}
 		}
 	},
 
@@ -3258,6 +3309,90 @@ public enum AttributesManagerMethod implements ManagerMethod {
 			ac.getAttributesManager().convertAttributeToUnique(ac.getSession(), parms.readInt("attrDefId"));
 			return null;
 		}
-	};
+	},
 
+	/*#
+	 * Generates text file describing dependencies between attribute modules.
+	 * The format of text file can be specified by parameter.
+	 * Modules that has no dependency relations are omitted.
+	 *
+	 * Warning: No matter which serializer you specify, this method always
+	 * returns .txt file as an attachment.
+	 *
+	 * @param format String Currently supported formats are DOT and TGF.
+	 * @throw InternalErrorException when some internal error happens.
+	 * @exampleParam format [ "DOT" ]
+	 */
+	/*#
+	 * Generates image file describing dependencies of given attribute.
+	 * The format of text file can be specified by parameter.
+	 * Modules that has no dependency relations are omitted.
+	 *
+	 * Warning: No matter which serializer you specify, this method always
+	 * returns .txt file as an attachment.
+	 *
+	 * @param attrName attribute name which dependencies will be found.
+	 * @param format String Currently supported formats are DOT and TGF.
+	 * @throw InternalErrorException when some internal error happens.
+	 * @throw AttributeNotExistsException when specified attribute doesn't exist.
+	 * @exampleParam format [ "DOT" ]
+	 * @exampleParam attrName [ "urn:perun:resource:attribute-def:virt:unixGID" ]
+	 */
+	getAttributeModulesDependenciesGraphText {
+		@Override
+		public String call(ApiCaller ac, Deserializer parms) throws InternalErrorException, PrivilegeException, AttributeNotExistsException {
+			String formatString = parms.readString("format").toUpperCase();
+
+			GraphTextFormat format;
+
+			try {
+				format = GraphTextFormat.valueOf(formatString);
+			} catch (IllegalArgumentException e) {
+				throw new RpcException(RpcException.Type.WRONG_PARAMETER, "Wrong parameter in format, not supported graph format: " + formatString);
+			}
+
+			if (parms.contains("attrName")) {
+				return ac.getAttributesManager().getModulesDependenciesGraphText(ac.getSession(), format, parms.readString("attrName"));
+			}
+
+			return ac.getAttributesManager().getModulesDependenciesGraphText(ac.getSession(), format);
+		}
+	},
+
+	/*#
+	 * Generates image file describing dependencies between attribute modules.
+	 * Modules that has no dependency relations are omitted.
+	 *
+	 * Warning: No matter which serializer you specify, this method always
+	 * returns .svg file as an attachment.
+	 *
+	 * @throw InternalErrorException when some internal error happens.
+	 */
+	/*#
+	 * Generates image file describing dependencies of given attribute.
+	 * Modules that has no dependency relations are omitted.
+	 *
+	 * Warning: No matter which serializer you specify, this method always
+	 * returns .svg file as an attachment.
+	 *
+	 * @param attrName attribute name which dependencies will be found.
+	 * @throw InternalErrorException when some internal error happens.
+	 * @throw AttributeNotExistsException when specified attribute doesn't exist.
+	 * @exampleParam attrName [ "urn:perun:resource:attribute-def:virt:unixGID" ]
+	 */
+	getAttributeModulesDependenciesGraphImage {
+		@Override
+		public Graphviz call(ApiCaller ac, Deserializer parms) throws InternalErrorException, PrivilegeException, AttributeNotExistsException {
+			if (parms.contains("attrName")) {
+				try {
+					return ac.getAttributesManager().getModulesDependenciesGraphImage(ac.getSession(), parms.readString("attrName"));
+				} catch (AttributeNotExistsException e) {
+					throw new RpcException(RpcException.Type.WRONG_PARAMETER,
+							"Attribute definition not found. If you are trying to find namespace attribute, " +
+										"you have to specify the whole urn. Example: \"urn:perun:group:attribute-def:def:googleGroupName-namespace:einfra-cesnet-cz\"");
+				}
+			}
+			return ac.getAttributesManager().getModulesDependenciesGraphImage(ac.getSession());
+		}
+	}
 }

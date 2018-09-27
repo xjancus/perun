@@ -21,6 +21,8 @@ import cz.metacentrum.perun.core.api.exceptions.VoNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.WrongAttributeAssignmentException;
 import cz.metacentrum.perun.core.api.exceptions.WrongAttributeValueException;
 import cz.metacentrum.perun.core.api.exceptions.WrongReferenceAttributeValueException;
+import cz.metacentrum.perun.utils.graphs.GraphTextFormat;
+import guru.nidi.graphviz.engine.Graphviz;
 
 import java.util.HashMap;
 import java.util.List;
@@ -122,6 +124,22 @@ public interface AttributesManager {
 	 * @throws FacilityNotExistsException if the facility doesn't exists in underlying data source
 	 */
 	List<Attribute> getAttributes(PerunSession sess, Facility facility) throws PrivilegeException, FacilityNotExistsException, InternalErrorException;
+
+	/**
+	 * Get all attributes associated with the facility which have name in list attrNames (empty too).
+	 * Virtual attribute too.
+	 *
+	 * PRIVILEGE: Get only those attributes the principal has access to.
+	 *
+	 * @param sess      perun session
+	 * @param facility    to get the attributes from
+	 * @param attrNames list of attributes' names
+	 * @return list of attributes
+	 * @throws PrivilegeException       if privileges are not given
+	 * @throws InternalErrorException   if an exception raise in concrete implementation, the exception is wrapped in InternalErrorException
+	 * @throws FacilityNotExistsException if the facility not exists in Perun
+	 */
+	List<Attribute> getAttributes(PerunSession sess, Facility facility, List<String> attrNames) throws PrivilegeException, InternalErrorException, FacilityNotExistsException;
 
 	/**
 	 * Get all <b>non-empty</b> attributes associated with the vo.
@@ -423,6 +441,22 @@ public interface AttributesManager {
 	 * @throws GroupNotExistsException if the group doesn't have access to this resource
 	 */
 	List<Attribute> getAttributes(PerunSession sess, Group group, List<String> attrNames) throws PrivilegeException, InternalErrorException, GroupNotExistsException;
+
+	/**
+	 * Get all attributes associated with the resource which have name in list attrNames (empty too).
+	 * Virtual attribute too.
+	 * <p>
+	 * PRIVILEGE: Get only those attributes the principal has access to.
+	 *
+	 * @param sess      perun session
+	 * @param resource     to get the attributes from
+	 * @param attrNames list of attributes' names
+	 * @return list of attributes
+	 * @throws PrivilegeException      if privileges are not given
+	 * @throws InternalErrorException  if an exception raise in concrete implementation, the exception is wrapped in InternalErrorException
+	 * @throws ResourceNotExistsException if the resource not exists in Perun
+	 */
+	List<Attribute> getAttributes(PerunSession sess, Resource resource, List<String> attrNames) throws PrivilegeException, InternalErrorException, ResourceNotExistsException;
 
 	/**
 	 * Get all attributes associated with the member which have name in list attrNames (empty too)
@@ -3639,4 +3673,51 @@ public interface AttributesManager {
 	 */
 	void convertAttributeToUnique(PerunSession session, int attrId) throws InternalErrorException, PrivilegeException, AttributeNotExistsException, AttributeAlreadyMarkedUniqueException;
 
+	/**
+	 * Generates graph describing attribute modules dependencies.
+	 * Text output format can be specified by {@link GraphTextFormat} format.
+	 *
+	 * @param session session
+	 * @param format text output format
+	 * @return body of text file containing description of modules dependencies.
+	 * @throws InternalErrorException internal error
+	 * @throws PrivilegeException insufficient permissions
+	 */
+	String getModulesDependenciesGraphText(PerunSession session, GraphTextFormat format) throws InternalErrorException, PrivilegeException;
+
+	/**
+	 * Generates graph describing dependencies for given AttributeDefinition.
+	 * Text output format can be specified by {@link GraphTextFormat} format.
+	 *
+	 * @param session session
+	 * @param format text output format
+	 * @param attributeName attribute definition which dependencies will be used
+	 * @return body of text file containing description of modules dependencies.
+	 * @throws InternalErrorException internal error
+	 * @throws PrivilegeException insufficient permissions
+	 */
+	String getModulesDependenciesGraphText(PerunSession session, GraphTextFormat format, String attributeName) throws InternalErrorException, PrivilegeException, AttributeNotExistsException;
+
+	/**
+	 * Generates Graphviz representation of a graph describing dependencies
+	 * of attribute modules.
+	 *
+	 * @param session session
+	 * @return {@link Graphviz} representation of modules dependencies.
+	 * @throws InternalErrorException internal error
+	 * @throws PrivilegeException insufficient permissions
+	 */
+	Graphviz getModulesDependenciesGraphImage(PerunSession session) throws InternalErrorException, PrivilegeException;
+
+	/**
+	 * Generates Graphviz represenRtation of a graph describing dependencies
+	 * for given AttributeDefinition of attribute modules.
+	 *
+	 * @param session session
+	 * @param attributeName attribute definition which dependencies will be used
+	 * @return {@link Graphviz} representation of modules dependencies.
+	 * @throws InternalErrorException internal error
+	 * @throws PrivilegeException insufficient permissions
+	 */
+	Graphviz getModulesDependenciesGraphImage(PerunSession session, String attributeName) throws InternalErrorException, PrivilegeException, AttributeNotExistsException;
 }

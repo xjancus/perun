@@ -98,7 +98,7 @@ public class ResourcesManagerEntryIntegrationTest extends AbstractPerunIntegrati
 		Resource resource2 = new Resource();
 		resource2.setName("ResourcesManagerTestResource");
 		resource2.setDescription("Test Resource two");
-		
+
 		resourcesManager.createResource(sess, resource1, vo, facility);
 		resourcesManager.createResource(sess, resource2, vo, facility);
 	}
@@ -333,59 +333,7 @@ public class ResourcesManagerEntryIntegrationTest extends AbstractPerunIntegrati
 		// shouldn't find resource
 
 	}
-
-	@Test
-	public void setFacility() throws Exception {
-		System.out.println(CLASS_NAME + "setFacility");
-
-		vo = setUpVo();
-		facility = setUpFacility();
-		resource = setUpResource();
-		assertNotNull("unable to create resource",resource);
-
-		Facility newFacility = new Facility();
-		newFacility.setName("ResourcesManagerTestFacility2");
-		newFacility = perun.getFacilitiesManager().createFacility(sess, newFacility);
-		/*
-			 Owner owner = new Owner();
-			 owner.setName("ResourcesManagerTestOwner2");
-			 owner.setContact("testingOwner2");
-			 perun.getOwnersManager().createOwner(sess, owner);
-			 perun.getFacilitiesManager().addOwner(sess, newFacility, owner);
-			 */
-		resourcesManager.setFacility(sess, resource, newFacility);
-
-		Facility returnedFacility = resourcesManager.getFacility(sess, resource);
-		assertNotNull("unable to get Facility from resource",returnedFacility);
-		assertEquals("unable to set different Facility",newFacility,returnedFacility);
-
-	}
-
-	@Test (expected=ResourceNotExistsException.class)
-	public void setFacilityWhenResourceNotExists() throws Exception {
-		System.out.println(CLASS_NAME + "setFacilityWhenResourceNotExists");
-
-		facility = setUpFacility();
-
-		resourcesManager.setFacility(sess, new Resource(), facility);
-		// shouldn't find resource
-
-	}
-
-	@Test (expected=FacilityNotExistsException.class)
-	public void setFacilityWhenFacilityNotExists() throws Exception {
-		System.out.println(CLASS_NAME + "setFacilityWhenFacilityNotExists");
-
-		vo = setUpVo();
-		facility = setUpFacility();
-		resource = setUpResource();
-		assertNotNull("unable to create resource",resource);
-
-		resourcesManager.setFacility(sess, resource, new Facility());
-		// shouldn't find facility
-
-	}
-
+	
 	@Test
 	public void getVo() throws Exception {
 		System.out.println(CLASS_NAME + "getVo");
@@ -1027,16 +975,16 @@ public class ResourcesManagerEntryIntegrationTest extends AbstractPerunIntegrati
 		resource.setName("UpdatedName1");
 		final Resource updatedResource1 = resourcesManager.updateResource(sess, resource);
 		assertEquals(updatedResource1, resourcesManager.getResourceById(sess, resource.getId()));
-		
+
 		resource.setDescription("ChangedDescription");
 		final Resource updatedResource2 = resourcesManager.updateResource(sess, resource);
 		assertEquals(updatedResource2, resourcesManager.getResourceById(sess, resource.getId()));
 	}
-	
+
 	@Test(expected = ResourceExistsException.class)
 	public void updateResourceWithExistingName() throws Exception {
 		System.out.println(CLASS_NAME + "updateResourceWithExistingName");
-		
+
 		vo = setUpVo();
 		facility = setUpFacility();
 		Resource resource1 = setUpResource();
@@ -1055,7 +1003,7 @@ public class ResourcesManagerEntryIntegrationTest extends AbstractPerunIntegrati
 		Facility facility2 = new Facility();
 		facility2.setName("DifferentFacility");
 		facility2 = perun.getFacilitiesManagerBl().createFacility(sess, facility2);
-		
+
 		Resource resource1 = setUpResource();
 		Resource resource2 = new Resource();
 		resource2.setName("DifferentResource");
@@ -1065,11 +1013,11 @@ public class ResourcesManagerEntryIntegrationTest extends AbstractPerunIntegrati
 		resource2.setName(resource1.getName());
 		resource2.setDescription(resource1.getDescription());
 		resourcesManager.updateResource(sess, resource2);
-		
+
 		assertEquals(resource1.getName(), resource2.getName());
 		assertNotEquals(resource1.getId(), resource2.getId());
 		assertNotEquals(resource1, resource2);
-	}	
+	}
 
 	@Test
 	public void getAllResourcesTagsForResource() throws Exception {
@@ -1606,6 +1554,94 @@ public class ResourcesManagerEntryIntegrationTest extends AbstractPerunIntegrati
 
 		assertNotNull(resources);
 		assertTrue(resources.contains(resource));
+	}
+
+	@Test
+	public void getResourcesWhereUserIsNotAdminButHisGroupIs() throws Exception {
+		System.out.println(CLASS_NAME + "getResourcesWhereUserIsNotAdminButHisGroupIs");
+		vo = setUpVo();
+		member = setUpMember(vo);
+		facility = setUpFacility();
+		resource = setUpResource();
+		group = setUpGroup(vo, member);
+		User u = perun.getUsersManagerBl().getUserByMember(sess, member);
+
+		resourcesManager.addAdmin(sess, resource, group);
+		List<Resource> resources = resourcesManager.getResourcesWhereUserIsAdmin(sess, u);
+
+		assertNotNull(resources);
+		assertTrue(resources.contains(resource));
+	}
+
+	@Test
+	public void getResourcesSpecifiedByVoAndFacilityWhereUserIsAdmin() throws Exception {
+		System.out.println(CLASS_NAME + "getResourcesSpecifiedByVoAndFacilityWhereUserIsAdmin");
+		vo = setUpVo();
+		member = setUpMember(vo);
+		facility = setUpFacility();
+		resource = setUpResource();
+		User u = perun.getUsersManagerBl().getUserByMember(sess, member);
+
+		resourcesManager.addAdmin(sess, resource, u);
+		List<Resource> resources = resourcesManager.getResourcesWhereUserIsAdmin(sess, facility, vo, u);
+
+		assertNotNull(resources);
+		assertTrue(resources.contains(resource));
+	}
+
+	@Test
+	public void getResourcesSpecifiedByVoAndFacilityWhereUserIsNotAdminButHisGroupIs() throws Exception {
+		System.out.println(CLASS_NAME + "getResourcesSpecifiedByVoAndFacilityWhereUserIsNotAdminButHisGroupIs");
+		vo = setUpVo();
+		member = setUpMember(vo);
+		facility = setUpFacility();
+		resource = setUpResource();
+		group = setUpGroup(vo, member);
+		User u = perun.getUsersManagerBl().getUserByMember(sess, member);
+
+		resourcesManager.addAdmin(sess, resource, group);
+		List<Resource> resources = resourcesManager.getResourcesWhereUserIsAdmin(sess, facility, vo, u);
+
+		assertNotNull(resources);
+		assertTrue(resources.contains(resource));
+	}
+
+	@Test
+	public void getResourcesWhereGroupIsAdmin() throws Exception {
+		System.out.println(CLASS_NAME + "getResourcesWhereGroupIsAdmin");
+		vo = setUpVo();
+		member = setUpMember(vo);
+		facility = setUpFacility();
+		resource = setUpResource();
+		group = setUpGroup(vo, member);
+
+		resourcesManager.addAdmin(sess, resource, group);
+		List<Resource> resources = resourcesManager.getResourcesWhereGroupIsAdmin(sess, facility, vo, group);
+
+		assertNotNull(resources);
+		assertTrue(resources.contains(resource));
+	}
+
+	@Test
+	public void getResourcesByIds() throws Exception {
+		System.out.println(CLASS_NAME + "getResourcesByIds");
+
+		vo = setUpVo();
+		facility = setUpFacility();
+		List ids = new ArrayList();
+		List resources = new ArrayList();
+
+		for (int i = 1; i < 1002; i++) {
+			Resource resource = new Resource();
+			resource.setName("ResourcesManagerTestResource" + i);
+			resource.setDescription("Testovaci" + i);
+			resourcesManager.createResource(sess, resource, vo, facility);
+			ids.add(resource.getId());
+			resources.add(resource);
+		}
+
+		assertEquals(resources, perun.getResourcesManagerBl().getResourcesByIds(sess, ids));
+
 	}
 
 	// PRIVATE METHODS -----------------------------------------------------------

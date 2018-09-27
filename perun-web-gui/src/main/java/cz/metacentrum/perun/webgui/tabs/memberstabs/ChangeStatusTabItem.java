@@ -55,7 +55,7 @@ public class ChangeStatusTabItem implements TabItem {
 
 	public Widget draw() {
 
-		this.titleWidget.setText("Change member's status");
+		this.titleWidget.setText("Change member status");
 
 		VerticalPanel vp = new VerticalPanel();
 		vp.setSize("300px", "100%");

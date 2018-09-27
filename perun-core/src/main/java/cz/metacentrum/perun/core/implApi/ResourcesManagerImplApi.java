@@ -102,17 +102,6 @@ public interface ResourcesManagerImplApi {
 	int getFacilityId(PerunSession perunSession, Resource resource) throws InternalErrorException;
 
 	/**
-	 * Set Facility to resource.
-	 *
-	 * @param perunSession
-	 * @param resource
-	 * @param facility
-	 *
-	 * @throws InternalErrorException
-	 */
-	void setFacility(PerunSession perunSession, Resource resource, Facility facility) throws InternalErrorException;
-
-	/**
 	 * Returns all user assigned to the resource.
 	 *
 	 * @param perunSession
@@ -305,6 +294,15 @@ public interface ResourcesManagerImplApi {
 	 * @return list of resources
 	 */
 	List<Resource> getResources(PerunSession perunSession, Vo vo) throws InternalErrorException;
+
+	/**
+	 * Get all resources.
+	 *
+	 * @param sess session
+	 * @return list of resources
+	 * @throws InternalErrorException internal error
+	 */
+	List<Resource> getResources(PerunSession sess) throws InternalErrorException;
 
 	/**
 	 * Get all VO rich resources.
@@ -577,6 +575,7 @@ public interface ResourcesManagerImplApi {
 
 	/**
 	 * Returns list of resources, where the user is an admin.
+	 * Including resources, where the user is a member of authorized group.
 	 *
 	 * @param sess
 	 * @param user
@@ -584,6 +583,33 @@ public interface ResourcesManagerImplApi {
 	 * @throws InternalErrorException
 	 */
 	List<Resource> getResourcesWhereUserIsAdmin(PerunSession sess, User user) throws InternalErrorException;
+
+	/**
+	 * Return all resources for the facility and the vo where user is authorized as resource manager.
+	 * Including resources, where the user is a member of authorized group.
+	 *
+	 * @param sess
+	 * @param facility the facility to which resources should be assigned to
+	 * @param vo the vo to which resources should be assigned to
+	 * @param authorizedUser user with resource manager role for all those resources
+	 * @return list of defined resources where user has role resource manager
+	 *
+	 * @throws InternalErrorException
+	 */
+	List<Resource> getResourcesWhereUserIsAdmin(PerunSession sess, Facility facility, Vo vo, User authorizedUser) throws InternalErrorException;
+
+	/**
+	 * Return all resources for the facility and the vo where the group is authorized as resource manager.
+	 *
+	 * @param sess
+	 * @param facility the facility to which resources should be assigned to
+	 * @param vo the vo to which resources should be assigned to
+	 * @param authorizedGroup group with resource manager role for all those resources
+	 * @return list of defined resources where groups has role resource manager
+	 *
+	 * @throws InternalErrorException
+	 */
+	List<Resource> getResourcesWhereGroupIsAdmin(PerunSession sess, Facility facility, Vo vo, Group authorizedGroup) throws InternalErrorException;
 
 	/**
 	 * Gets list of all group administrators of the Resource.

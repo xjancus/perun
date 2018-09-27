@@ -11,6 +11,7 @@ import cz.metacentrum.perun.core.api.ServiceAttributes;
 import cz.metacentrum.perun.core.api.ServicesPackage;
 import cz.metacentrum.perun.core.api.Resource;
 import cz.metacentrum.perun.core.api.exceptions.PerunException;
+import cz.metacentrum.perun.core.api.exceptions.RpcException;
 import cz.metacentrum.perun.rpc.ApiCaller;
 import cz.metacentrum.perun.rpc.ManagerMethod;
 import cz.metacentrum.perun.rpc.deserializer.Deserializer;
@@ -23,14 +24,32 @@ public enum ServicesManagerMethod implements ManagerMethod {
 	 * @param service Service JSON object
 	 * @return Service Created Service
 	 */
+	/*#
+	 * Creates a new service.
+	 *
+	 * @param name String name
+	 * @param description String description
+	 * @param script String script which should be constructed like ./service_name (where anything else than [a-z,A-Z] is converted to _)
+	 * @return Service Created Service
+	 */
 	createService {
 
 		@Override
 		public Service call(ApiCaller ac, Deserializer parms) throws PerunException {
 			ac.stateChangingCheck();
 
-			return ac.getServicesManager().createService(ac.getSession(),
-					parms.read("service", Service.class));
+			if (parms.contains("service")) {
+				return ac.getServicesManager().createService(ac.getSession(),
+						parms.read("service", Service.class));
+			} else if (parms.contains("name") && parms.contains("description") && parms.contains("script")) {
+				String name = parms.readString("name");
+				String description = parms.readString("description");
+				Service service = new Service(0, name, description);
+				service.setScript(parms.readString("script"));
+				return ac.getServicesManager().createService(ac.getSession(), service);
+			} else {
+				throw new RpcException(RpcException.Type.WRONG_PARAMETER);
+			}
 		}
 	},
 
@@ -423,14 +442,30 @@ public enum ServicesManagerMethod implements ManagerMethod {
 	 * @param servicesPackage ServicesPackage JSON object.
 	 * @return ServicesPackage Created ServicesPackage
 	 */
+	/*#
+	 * Creates a new services package.
+	 *
+	 * @param name String name
+	 * @param description String description
+	 * @return ServicesPackage Created ServicesPackage
+	 */
 	createServicesPackage {
 
 		@Override
 		public ServicesPackage call(ApiCaller ac, Deserializer parms) throws PerunException {
 			ac.stateChangingCheck();
 
-			return ac.getServicesManager().createServicesPackage(ac.getSession(),
-					parms.read("servicesPackage", ServicesPackage.class));
+			if (parms.contains("servicesPackage")) {
+				return ac.getServicesManager().createServicesPackage(ac.getSession(),
+						parms.read("servicesPackage", ServicesPackage.class));
+			} else if (parms.contains("name") && parms.contains("description")) {
+				String name = parms.readString("name");
+				String description = parms.readString("description");
+				ServicesPackage servicesPackage = new ServicesPackage(0, name, description);
+				return ac.getServicesManager().createServicesPackage(ac.getSession(), servicesPackage);
+			} else {
+				throw new RpcException(RpcException.Type.WRONG_PARAMETER);
+			}
 		}
 	},
 
@@ -715,7 +750,7 @@ public enum ServicesManagerMethod implements ManagerMethod {
 	 * @param service int Service <code>id</code>
 	 * @param facility int Facility <code>id</code>
 	 * @param destination String Destination
-	 * @param type String Destination type (HOST,USER@HOST,USER@HOST:PORT,URL,MAIL,SERVICE-SPECIFIC)
+	 * @param type String Destination type (host,user@host,user@host:port,url,mail,service-specific)
 	 * @return Destination Created destination.
 	 */
 	/*#
@@ -724,7 +759,7 @@ public enum ServicesManagerMethod implements ManagerMethod {
 	 * @param services List<Service> Services
 	 * @param facility int Facility <code>id</code>
 	 * @param destination String Destination
-	 * @param type String Destination type (HOST,USER@HOST,USER@HOST:PORT,URL,MAIL,SERVICE-SPECIFIC)
+	 * @param type String Destination type (host,user@host,user@host:port,url,mail,service-specific)
 	 * @return Destination Created destination.
 	 */
 	/*#
@@ -733,7 +768,7 @@ public enum ServicesManagerMethod implements ManagerMethod {
 	 * @param service int Service <code>id</code>
 	 * @param facility int Facility <code>id</code>
 	 * @param destination String Destination
-	 * @param type String Destination type (HOST,USER@HOST,USER@HOST:PORT,URL,MAIL,SERVICE-SPECIFIC)
+	 * @param type String Destination type (host,user@host,user@host:port,url,mail,service-specific)
 	 * @param propagationType String propagation type (PARALLEL, DUMMY - doesn't send data)
 	 * @return Destination Created destination.
 	 */
@@ -743,7 +778,7 @@ public enum ServicesManagerMethod implements ManagerMethod {
 	 * @param services List<Service> Services
 	 * @param facility int Facility <code>id</code>
 	 * @param destination String Destination
-	 * @param type String Destination type (HOST,USER@HOST,USER@HOST:PORT,URL,MAIL,SERVICE-SPECIFIC)
+	 * @param type String Destination type (host,user@host,user@host:port,url,mail,service-specific)
 	 * @param propagationType String propagation type (PARALLEL, DUMMY - doesn't send data)
 	 * @return Destination Created destination.
 	 */
@@ -782,7 +817,7 @@ public enum ServicesManagerMethod implements ManagerMethod {
 	 *
 	 * @param facility int Facility <code>id</code>
 	 * @param destination String Destination
-	 * @param type String String Destination type (HOST,USER@HOST,USER@HOST:PORT,URL,MAIL,SERVICE-SPECIFIC)
+	 * @param type String String Destination type (host,user@host,user@host:port,url,mail,service-specific)
 	 * @return List<Destinations> Added destinations
 	 */
 	/*#
@@ -790,7 +825,7 @@ public enum ServicesManagerMethod implements ManagerMethod {
 	 *
 	 * @param facility int Facility <code>id</code>
 	 * @param destination String Destination
-	 * @param type String Destination type (HOST,USER@HOST,USER@HOST:PORT,URL,MAIL,SERVICE-SPECIFIC)
+	 * @param type String Destination type (host,user@host,user@host:port,url,mail,service-specific)
 	 * @param propagationType String propagation type (PARALLEL, DUMMY - doesn't send data)
 	 * @return List<Destinations> Added destinations
 	 */

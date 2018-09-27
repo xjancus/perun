@@ -27,7 +27,6 @@ use Perun::beans::ServicesPackage;
 use Perun::beans::ServiceAttributes;
 use Perun::beans::Candidate;
 use Perun::beans::RichMember;
-use Perun::beans::ExecService;
 use Perun::beans::Destination;
 use Perun::beans::AuditMessage;
 use Perun::beans::TaskResult;
@@ -45,6 +44,7 @@ use Perun::beans::ContactGroup;
 use Perun::beans::SecurityTeam;
 use Perun::beans::BanOnResource;
 use Perun::beans::BanOnFacility;
+use Perun::beans::AttributeRights;
 
 sub newEmptyBean
 {

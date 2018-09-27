@@ -9,6 +9,7 @@ import cz.metacentrum.perun.core.implApi.MembersManagerImplApi;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcPerunTemplate;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -16,8 +17,10 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class MembersManagerImpl implements MembersManagerImplApi {
@@ -28,7 +31,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 			"members.created_by_uid as members_created_by_uid, members.modified_by_uid as members_modified_by_uid";
 
 	final static String groupsMembersMappingSelectQuery = memberMappingSelectQuery + ", groups_members.membership_type as membership_type, " +
-			"groups_members.source_group_id as source_group_id";
+			"groups_members.source_group_id as source_group_id, groups_members.source_group_status as source_group_status, groups_members.group_id as group_id";
 
 	private JdbcPerunTemplate jdbc;
 	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
@@ -40,12 +43,31 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 				rs.getInt("members_modified_by_uid") == 0 ? null : rs.getInt("members_modified_by_uid"));
 		member.setSponsored(rs.getBoolean("members_sponsored"));
 		try {
+			member.putGroupStatus(rs.getInt("group_id"), MemberGroupStatus.getMemberGroupStatus(rs.getInt("source_group_status")));
 			member.setMembershipType(MembershipType.getMembershipType(rs.getInt("membership_type")));
 			member.setSourceGroupId(rs.getInt("source_group_id"));
 		} catch (SQLException ex) {
 			// this is ok, member does not need to always have membership_type and source_group_id set
 		}
 		return member;
+	};
+
+
+	public static final ResultSetExtractor<List<Member>> MEMBERS_WITH_GROUP_STATUSES_SET_EXTRACTOR = resultSet -> {
+		Map<Integer, Member> members = new HashMap<>();
+
+		while(resultSet.next()) {
+			Member member = MembersManagerImpl.MEMBER_MAPPER.mapRow(resultSet, resultSet.getRow());
+			if (members.containsKey(member.getId())) {
+				members.get(member.getId()).putGroupStatuses(member.getGroupStatuses());
+			} else {
+				member.setSourceGroupId(null);
+				member.setMembershipType((String)null);
+				members.put(member.getId(), member);
+			}
+		}
+
+		return new ArrayList<>(members.values());
 	};
 
 	/**
@@ -56,6 +78,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(perunPool);
 	}
 
+	@Override
 	public Member createMember(PerunSession sess, Vo vo, User user) throws InternalErrorException, AlreadyMemberException {
 		Member member;
 		try {
@@ -78,6 +101,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		return member;
 	}
 
+	@Override
 	public Member getMemberByUserId(PerunSession sess, Vo vo, int userId) throws InternalErrorException, MemberNotExistsException {
 		try {
 			return jdbc.queryForObject("SELECT " + memberMappingSelectQuery + " FROM" +
@@ -90,6 +114,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Member> getMembersByUser(PerunSession sess, User user) throws InternalErrorException {
 		try {
 			return jdbc.query("SELECT " + memberMappingSelectQuery + " FROM" +
@@ -102,6 +127,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		}
 	}
 
+	@Override
 	public Member getMemberById(PerunSession sess, int id) throws InternalErrorException, MemberNotExistsException {
 		try {
 			return jdbc.queryForObject("SELECT " + memberMappingSelectQuery + " FROM members "
@@ -113,6 +139,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		}
 	}
 
+	@Override
 	public void deleteMember(final PerunSession sess, final Member member) throws InternalErrorException, MemberAlreadyRemovedException {
 		try {
 			int numAffected = jdbc.update("DELETE FROM members WHERE id=?", member.getId());
@@ -122,6 +149,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		}
 	}
 
+	@Override
 	public int getMemberVoId(PerunSession sess, Member member) throws InternalErrorException {
 		try {
 			return jdbc.queryForInt("select vo_id from members where id=?", member.getId());
@@ -130,6 +158,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		}
 	}
 
+	@Override
 	public Member getMemberByUserExtSource(PerunSession sess, Vo vo, UserExtSource userExtSource) throws InternalErrorException, MemberNotExistsException {
 		try {
 			return jdbc.queryForObject("SELECT " + memberMappingSelectQuery + " FROM members, user_ext_sources WHERE " +
@@ -142,6 +171,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		}
 	}
 
+	@Override
 	public boolean memberExists(PerunSession sess, Member member) throws InternalErrorException {
 		Utils.notNull(member, "member");
 		try {
@@ -153,10 +183,12 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		}
 	}
 
+	@Override
 	public void checkMemberExists(PerunSession sess, Member member) throws InternalErrorException, MemberNotExistsException {
 		if (!memberExists(sess, member)) throw new MemberNotExistsException("Member: " + member);
 	}
 
+	@Override
 	public void setStatus(PerunSession sess, Member member, Status status) throws InternalErrorException {
 		try {
 			jdbc.update("update members set status=?, modified_by=?, modified_at=" + Compatibility.getSysdate() + "  where id=?", status.getCode(), sess.getPerunPrincipal().getActor(), member.getId());
@@ -165,6 +197,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Member> getMembersByUsersIds(PerunSession sess, List<Integer> usersIds, Vo vo) throws InternalErrorException {
 		// If usersIds is empty, we can immediatelly return empty results
 		if (usersIds.size() == 0) {
@@ -187,6 +220,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		}
 	}
 
+	@Override
 	public List<Member> getMembersByUsers(PerunSession sess, List<User> users, Vo vo) throws InternalErrorException {
 		// If usersIds is empty, we can immediatelly return empty results
 		if (users.size() == 0) {
@@ -211,6 +245,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		}
 	}
 
+	@Override
 	public int getMembersCount(PerunSession sess, Vo vo) throws InternalErrorException {
 		try {
 			return jdbc.queryForInt("select count(*) from members where vo_id=?", vo.getId());
@@ -219,6 +254,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		}
 	}
 
+	@Override
 	public int getMembersCount(PerunSession sess, Vo vo, Status status) throws InternalErrorException {
 		try {
 			if (Compatibility.isPostgreSql()) {
@@ -231,6 +267,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 		}
 	}
 
+	@Override
 	public int storePasswordResetRequest(PerunSession sess, User user, String namespace) throws InternalErrorException {
 
 		int newId = Utils.getNewId(jdbc, "pwdreset_id_seq");
