@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE hibernate-configuration PUBLIC
+    "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+    "http://hibernate.sourceforge.net/hibernate-configuration-3.0.dtd" >
+
+<hibernate-configuration>
+    <session-factory>
+        <!--  Database connection settings
+        -->
+        <property name="connection.driver_class">org.postgresql.Driver</property>
+        <property name="connection.url">jdbc:postgresql://localhost:5432/perun</property>
+        <property name="connection.username">perun</property>
+        <property name="connection.password"></property>
+        <!--  JDBC connection pool (use the built-in)
+        -->
+        <property name="connection.pool_size">1</property>
+
+        <!--  Disable the second-level cache
+        -->
+        <property name="cache.provider_class">org.hibernate.cache.internal.CollectionCacheInvalidator</property>
+        <!--  Echo all executed SQL to stdout
+        -->
+        <property name="show_sql">true</property>
+        <!--  Drop and re-create the database schema on startup
+        -->
+        <property name="hbm2ddl.auto">update</property>
+
+        <!--  SQL dialect
+        -->
+        <property name="dialect">org.hibernate.dialect.PostgreSQL81Dialect</property>
+
+        <!--  Names the annotated entity class-->
+
+        <mapping class="cz.metacentrum.perun.core.api.PerunBean"/>
+        <mapping class="cz.metacentrum.perun.core.api.Attribute"/>
+        <mapping class="cz.metacentrum.perun.core.api.AttributeDefinition"/>
+        <mapping class="cz.metacentrum.perun.core.api.Facility"/>
+        <mapping class="cz.metacentrum.perun.core.api.Resource"/>
+        <mapping class="cz.metacentrum.perun.core.api.RichAttribute"/>
+        <mapping class="cz.metacentrum.perun.core.api.Service"/>
+        <mapping class="cz.metacentrum.perun.core.api.User"/>
+
+        <mapping resource="/hibernateMapping/PerunBean.hbm.xml"/>
+
+    </session-factory>
+</hibernate-configuration>
