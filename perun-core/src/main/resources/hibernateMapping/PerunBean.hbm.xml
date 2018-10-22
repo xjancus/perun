@@ -1,0 +1,236 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="cz.metacentrum.perun.core.api.PerunBean" >
+
+        <id name="id" type="java.lang.Integer" >
+            <generator class="identity" />
+        </id>
+
+        <union-subclass name="cz.metacentrum.perun.core.api.Attribute" table="attr_names">
+            <property name="id" type="java.lang.Integer" >
+                <column name="default_attr_id" default="null"/>
+            </property>
+            <property name="value" >
+                <column name="attr_name" length="384" not-null="true"/>
+            </property>
+            <property name="friendlyName" type="java.lang.String">
+                <column name="friendly_name" length="128" not-null="true"/>
+            </property>
+            <property name="namespace" type="java.lang.String">
+                <column name="namespace" length="256" not-null="true"/>
+            </property>
+            <property name="description" type="java.lang.String">
+                <column name="dsc" length="1024"/>
+            </property>
+            <property name="type" type="java.lang.String">
+                <column name="type" length="256" not-null="true"/>
+            </property>
+            <property name="displayName" type="java.lang.String">
+                <column name="display_name" length="256"/>
+            </property>
+            <property name="unique" type="java.lang.Boolean">
+                <column name="is_unique" not-null="true" default="false"/>
+            </property>
+
+
+            <property name="createdAt" type="string">
+                <column name="created_at" length="128" not-null="true" />
+            </property>
+            <property name="createdBy" type="string">
+                <column name="created_by" length="1300" default="user" not-null="true" />
+            </property>
+            <property name="modifiedAt" type="string">
+                <column name="modified_at" length="128" not-null="true" />
+            </property>
+            <property name="modifiedBy" type="string">
+                <column name="modified_by" length="1300" default="user" not-null="true" />
+            </property>
+
+            <property name="createdByUid" type="java.lang.Integer">
+                <column name="created_by_uid" />
+            </property>
+            <property name="modifiedByUid" type="java.lang.Integer">
+                <column name="modified_by_uid" />
+            </property>
+        </union-subclass>
+
+        <union-subclass name="cz.metacentrum.perun.core.api.User" table="users" >
+
+            <property name="firstName" type="string">
+                <column name="first_name" length="64" />
+            </property>
+            <property name="lastName" type="string">
+                <column name="last_name" length="64" />
+            </property>
+            <property name="middleName" type="string">
+                <column name="middle_name" length="64" />
+            </property>
+            <property name="titleBefore" type="string">
+                <column name="title_before" length="64" />
+            </property>
+            <property name="titleAfter" type="string">
+                <column name="title_after" length="64" />
+            </property>
+
+            <property name="serviceUser" type="char">
+                <column name="service_acc" length="1" default="0" not-null="true"/>
+            </property>
+            <property name="sponsoredUser" type="char">
+                <column name="sponsored_acc" length="1" default="0" not-null="true"/>
+            </property>
+
+            <property name="createdAt" type="string">
+                <column name="created_at" length="128" not-null="true" />
+            </property>
+            <property name="createdBy" type="string">
+                <column name="created_by" length="1300" default="user" not-null="true" />
+            </property>
+            <property name="modifiedAt" type="string">
+                <column name="modified_at" length="128" not-null="true" />
+            </property>
+            <property name="modifiedBy" type="string">
+                <column name="modified_by" length="1300" default="user" not-null="true" />
+            </property>
+
+            <property name="createdByUid" type="java.lang.Integer">
+                <column name="created_by_uid" />
+            </property>
+            <property name="modifiedByUid" type="java.lang.Integer">
+                <column name="modified_by_uid" />
+            </property>
+
+        </union-subclass>
+
+        <union-subclass name="cz.metacentrum.perun.core.api.Facility" table="facilities">
+
+            <property name="name" type="java.lang.String">
+                <column name="name" length="128" not-null="true" unique="true"/>
+            </property>
+            <property name="description" type="string">
+                <column name="dsc" length="1024" />
+            </property>
+
+            <property name="createdAt" type="string">
+                <column name="created_at" length="128" not-null="true" />
+            </property>
+            <property name="createdBy" type="string">
+                <column name="created_by" length="1300" default="user" not-null="true" />
+            </property>
+            <property name="modifiedAt" type="string">
+                <column name="modified_at" length="128" not-null="true" />
+            </property>
+            <property name="modifiedBy" type="string">
+                <column name="modified_by" length="1300" default="user" not-null="true" />
+            </property>
+
+            <property name="createdByUid" type="java.lang.Integer">
+                <column name="created_by_uid" />
+            </property>
+            <property name="modifiedByUid" type="java.lang.Integer">
+                <column name="modified_by_uid" />
+            </property>
+
+            <property name="createdAt" type="string">
+                <column name="created_at" length="128" not-null="true" />
+            </property>
+            <property name="createdBy" type="string">
+                <column name="created_by" length="1300" default="user" not-null="true" />
+            </property>
+            <property name="modifiedAt" type="string">
+                <column name="modified_at" length="128" not-null="true" />
+            </property>
+            <property name="modifiedBy" type="string">
+                <column name="modified_by" length="1300" default="user" not-null="true" />
+            </property>
+
+            <property name="createdByUid" type="java.lang.Integer">
+                <column name="created_by_uid" />
+            </property>
+            <property name="modifiedByUid" type="java.lang.Integer">
+                <column name="modified_by_uid" />
+            </property>
+
+        </union-subclass>
+
+        <union-subclass name="cz.metacentrum.perun.core.api.Resource" table="resources">
+
+            <property name="facilityId" type="java.lang.Integer">
+                <column name="facility_id"/>
+            </property>
+            <property name="voId" type="java.lang.Integer">
+                <column name="vo_id"/>
+            </property>
+            <property name="name" type="java.lang.String">
+                <column name="name" length="128" not-null="true"/>
+            </property>
+            <property name="description" type="string">
+                <column name="dsc" length="1024" />
+            </property>
+
+            <property name="createdAt" type="string">
+                <column name="created_at" length="128" not-null="true" />
+            </property>
+            <property name="createdBy" type="string">
+                <column name="created_by" length="1300" default="user" not-null="true" />
+            </property>
+            <property name="modifiedAt" type="string">
+                <column name="modified_at" length="128" not-null="true" />
+            </property>
+            <property name="modifiedBy" type="string">
+                <column name="modified_by" length="1300" default="user" not-null="true" />
+            </property>
+
+            <property name="createdByUid" type="java.lang.Integer">
+                <column name="created_by_uid" />
+            </property>
+            <property name="modifiedByUid" type="java.lang.Integer">
+                <column name="modified_by_uid" />
+            </property>
+        </union-subclass>
+
+        <union-subclass name="cz.metacentrum.perun.core.api.Service" table="services">
+            <property name="name" type="java.lang.String">
+                <column name="name" length="128" not-null="true"/>
+            </property>
+            <property name="description" type="string">
+                <column name="description" length="1024" />
+            </property>
+            <property name="delay" type="java.lang.Integer">
+                <column name="delay" not-null="true" default="10"/>
+            </property>
+            <property name="recurrence" type="java.lang.Integer">
+                <column name="recurrence" not-null="true" default="2"/>
+            </property>
+            <property name="enabled" type="java.lang.Boolean">
+                <column name="enabled" sql-type="char" not-null="true" default="1"/>
+            </property>
+            <property name="script" type="string">
+                <column name="script" length="256" not-null="true"/>
+            </property>
+
+            <property name="createdAt" type="string">
+                <column name="created_at" length="128" not-null="true" />
+            </property>
+            <property name="createdBy" type="string">
+                <column name="created_by" length="1300" default="user" not-null="true" />
+            </property>
+            <property name="modifiedAt" type="string">
+                <column name="modified_at" length="128" not-null="true" />
+            </property>
+            <property name="modifiedBy" type="string">
+                <column name="modified_by" length="1300" default="user" not-null="true" />
+            </property>
+
+            <property name="createdByUid" type="java.lang.Integer">
+                <column name="created_by_uid" />
+            </property>
+            <property name="modifiedByUid" type="java.lang.Integer">
+                <column name="modified_by_uid" />
+            </property>
+
+        </union-subclass>
+    </class>
+</hibernate-mapping>
