@@ -62,6 +62,14 @@ import cz.metacentrum.perun.core.implApi.modules.attributes.UserExtSourceVirtual
 import cz.metacentrum.perun.core.implApi.modules.attributes.UserVirtualAttributesModuleImplApi;
 import cz.metacentrum.perun.core.implApi.modules.attributes.VirtualAttributesModuleImplApi;
 import cz.metacentrum.perun.core.implApi.modules.attributes.VoAttributesModuleImplApi;
+import org.hibernate.Query;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.boot.Metadata;
+import org.hibernate.boot.MetadataSources;
+import org.hibernate.boot.registry.StandardServiceRegistry;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.cfg.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -140,11 +148,12 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 	// mapping of the perun bean names to the attribute namespaces
 	public static final Map<String, String> BEANS_TO_NAMESPACES_MAP = new LinkedHashMap<>();
 	private static final Map<String, String> ENTITIES_TO_BEANS_MAP = new HashMap<>();
-	private static final List<String> SINGLE_BEAN_ATTRIBUTES = Arrays.asList("user","member","facility","vo","host","group","resource","user_ext_source");
-	private static final List<String> DOUBLE_BEAN_ATTRIBUTES = Arrays.asList("member_resource","member_group","user_facility","group_resource");
+	private static final List<String> SINGLE_BEAN_ATTRIBUTES = Arrays.asList("user", "member", "facility", "vo", "host", "group", "resource", "user_ext_source");
+	private static final List<String> DOUBLE_BEAN_ATTRIBUTES = Arrays.asList("member_resource", "member_group", "user_facility", "group_resource");
 
 	/**
 	 * List of allowed values for attribute type.
+	 *
 	 * @see cz.metacentrum.perun.core.api.BeansUtils#attributeValueToString(Attribute)
 	 */
 	public static final List<String> ATTRIBUTE_TYPES = Arrays.asList(
@@ -173,8 +182,8 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		BEANS_TO_NAMESPACES_MAP.put("user_ext_source", NS_UES_ATTR);
 		BEANS_TO_NAMESPACES_MAP.put("entityless", NS_ENTITYLESS_ATTR);
 		//create reverse mapping, e.g. ues -> user_ext_source
-		for(Map.Entry<String,String> entry : BEANS_TO_NAMESPACES_MAP.entrySet()) {
-			ENTITIES_TO_BEANS_MAP.put(entry.getValue().split(":")[2],entry.getKey());
+		for (Map.Entry<String, String> entry : BEANS_TO_NAMESPACES_MAP.entrySet()) {
+			ENTITIES_TO_BEANS_MAP.put(entry.getValue().split(":")[2], entry.getKey());
 		}
 	}
 
@@ -190,18 +199,18 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 	private final static String attributeDefinitionMappingSelectQuery =
 			"attr_names.id as attr_names_id," +
-			"attr_names.friendly_name as attr_names_friendly_name," +
-			"attr_names.namespace as attr_names_namespace," +
-			"attr_names.type as attr_names_type," +
-			"attr_names.display_name as attr_names_display_name," +
-			"attr_names.dsc as attr_names_dsc," +
-			"attr_names.is_unique as attr_names_unique," +
-			"attr_names.created_at as attr_names_created_at," +
-			"attr_names.created_by as attr_names_created_by," +
-			"attr_names.modified_by as attr_names_modified_by," +
-			"attr_names.modified_at as attr_names_modified_at," +
-			"attr_names.created_by_uid as attr_names_created_by_uid," +
-			"attr_names.modified_by_uid as attr_names_modified_by_uid";
+					"attr_names.friendly_name as attr_names_friendly_name," +
+					"attr_names.namespace as attr_names_namespace," +
+					"attr_names.type as attr_names_type," +
+					"attr_names.display_name as attr_names_display_name," +
+					"attr_names.dsc as attr_names_dsc," +
+					"attr_names.is_unique as attr_names_unique," +
+					"attr_names.created_at as attr_names_created_at," +
+					"attr_names.created_by as attr_names_created_by," +
+					"attr_names.modified_by as attr_names_modified_by," +
+					"attr_names.modified_at as attr_names_modified_at," +
+					"attr_names.created_by_uid as attr_names_created_by_uid," +
+					"attr_names.modified_by_uid as attr_names_modified_by_uid";
 
 	private final static String attributeRightSelectQuery =
 			"attributes_authz.attr_id as attr_name_id," +
@@ -270,7 +279,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 	static final RowMapper<Attribute> ATTRIBUTE_MAPPER = (rs, i) -> {
 
-		AttributeDefinition attributeDefinition = ATTRIBUTE_DEFINITION_MAPPER.mapRow(rs,i);
+		AttributeDefinition attributeDefinition = ATTRIBUTE_DEFINITION_MAPPER.mapRow(rs, i);
 
 		Attribute attribute = new Attribute(attributeDefinition);
 		attribute.setValueCreatedAt(rs.getString("attr_value_created_at"));
@@ -310,8 +319,8 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		/**
 		 * Constructor.
 		 *
-		 * @param attributeHolder       Facility, Resource or Member for which you want the attribute value
-		 * @param attributeHolder2      secondary Facility, Resource or Member for which you want the attribute value
+		 * @param attributeHolder  Facility, Resource or Member for which you want the attribute value
+		 * @param attributeHolder2 secondary Facility, Resource or Member for which you want the attribute value
 		 */
 		AttributeRowMapper(PerunSession sess, AttributesManagerImpl attributesManagerImpl, T attributeHolder, V attributeHolder2) {
 			this.sess = sess;
@@ -361,25 +370,25 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 						value = String.valueOf(value);
 					} else //noinspection StatementWithEmptyBody
 						if (attribute.getType().equals(Integer.class.getName()) && !(value instanceof Integer)) {
-						//TODO try to cast to integer
-					} else //noinspection StatementWithEmptyBody
-						if (attribute.getType().equals(Boolean.class.getName()) && !(value instanceof Boolean)) {
-						//TODO try to cast to boolean
-					} else if ((attribute.getType().equals(ArrayList.class.getName()) || attribute.getType().equals(BeansUtils.largeArrayListClassName)) && !(value instanceof ArrayList)) {
-						if (value instanceof List) {
-							//noinspection unchecked
-							value = new ArrayList<String>((List) value);
-						} else {
-							throw new InternalErrorRuntimeException("Cannot convert result of method " + attributeHolder.getClass().getName() + "." + methodName + " to ArrayList.");
-						}
-					} else if (attribute.getType().equals(LinkedHashMap.class.getName()) && !(value instanceof LinkedHashMap)) {
-						if (value instanceof Map) {
-							//noinspection unchecked
-							value = new LinkedHashMap<String, String>((Map) value);
-						} else {
-							throw new InternalErrorRuntimeException("Cannot convert result of method " + attributeHolder.getClass().getName() + "." + methodName + " to LinkedHashMap.");
-						}
-					}
+							//TODO try to cast to integer
+						} else //noinspection StatementWithEmptyBody
+							if (attribute.getType().equals(Boolean.class.getName()) && !(value instanceof Boolean)) {
+								//TODO try to cast to boolean
+							} else if ((attribute.getType().equals(ArrayList.class.getName()) || attribute.getType().equals(BeansUtils.largeArrayListClassName)) && !(value instanceof ArrayList)) {
+								if (value instanceof List) {
+									//noinspection unchecked
+									value = new ArrayList<String>((List) value);
+								} else {
+									throw new InternalErrorRuntimeException("Cannot convert result of method " + attributeHolder.getClass().getName() + "." + methodName + " to ArrayList.");
+								}
+							} else if (attribute.getType().equals(LinkedHashMap.class.getName()) && !(value instanceof LinkedHashMap)) {
+								if (value instanceof Map) {
+									//noinspection unchecked
+									value = new LinkedHashMap<String, String>((Map) value);
+								} else {
+									throw new InternalErrorRuntimeException("Cannot convert result of method " + attributeHolder.getClass().getName() + "." + methodName + " to LinkedHashMap.");
+								}
+							}
 
 					Auditable auditableHolder = (Auditable) attributeHolder;
 					attribute.setCreatedAt(auditableHolder.getCreatedAt());
@@ -686,7 +695,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		try {
 			return jdbc.query("SELECT " + attributeDefinitionMappingSelectQuery + ", NULL AS attr_value FROM attr_names WHERE namespace=?", rowMapper, namespace);
 		} catch (EmptyResultDataAccessException ex) {
-			log.debug("No virtual attribute for "+(namespace.split(":")[2])+" exists.");
+			log.debug("No virtual attribute for " + (namespace.split(":")[2]) + " exists.");
 			return new ArrayList<>();
 		} catch (RuntimeException ex) {
 			throw new InternalErrorException(ex);
@@ -715,7 +724,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 	@Override
 	public List<Attribute> getVirtualAttributes(PerunSession sess, Host host) throws InternalErrorException {
-		return  getVirtualAttributes(new SingleBeanAttributeRowMapper<>(sess, this, host), AttributesManager.NS_HOST_ATTR_VIRT);
+		return getVirtualAttributes(new SingleBeanAttributeRowMapper<>(sess, this, host), AttributesManager.NS_HOST_ATTR_VIRT);
 	}
 
 	@Override
@@ -745,7 +754,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 	@Override
 	public List<Attribute> getVirtualAttributes(PerunSession sess, Member member, Group group) throws InternalErrorException {
-		return  getVirtualAttributes(new MemberGroupAttributeRowMapper(sess, this, member, group), AttributesManager.NS_MEMBER_GROUP_ATTR_VIRT);
+		return getVirtualAttributes(new MemberGroupAttributeRowMapper(sess, this, member, group), AttributesManager.NS_MEMBER_GROUP_ATTR_VIRT);
 	}
 
 
@@ -887,6 +896,20 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
+	private static SessionFactory getSessionFactory() {
+
+		StandardServiceRegistry registry;
+		SessionFactory sessionFactory;
+		registry = new StandardServiceRegistryBuilder().configure().build();
+
+		MetadataSources sources = new MetadataSources(registry);
+
+		Metadata metadata = sources.getMetadataBuilder().build();
+
+		sessionFactory = metadata.getSessionFactoryBuilder().build();
+		return sessionFactory;
+	}
+
 	@Override
 	public List<Attribute> getAttributes(PerunSession sess, User user, Facility facility, List<String> attrNames) throws InternalErrorException {
 		MapSqlParameterSource parameters = new MapSqlParameterSource();
@@ -896,6 +919,25 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		parameters.addValue("nSD", AttributesManager.NS_USER_FACILITY_ATTR_DEF);
 		parameters.addValue("nSV", AttributesManager.NS_USER_FACILITY_ATTR_VIRT);
 		parameters.addValue("attrNames", attrNames);
+
+		SessionFactory sessionFactory = new Configuration().configure().buildSessionFactory();
+		Session session = sessionFactory.openSession();
+		session.beginTransaction();
+
+		String hql = "select " + getAttributeMappingSelectQuery("user_fac") + " from Attribute as attr_names " +
+				"left join user_facility_attr_values user_fac on id=user_fac.attr_id and user_id=:uId and facility_id=:fId " +
+				"where attr_names.namespace in ( :nSO,:nSD,:nSV ) and attr_names.value  in ( :attrNames )";
+
+		Query query =  session.createQuery(hql);
+		query.setParameter("uId", user.getId());
+		query.setParameter("fId", facility.getId());
+		query.setParameter("nSO", AttributesManager.NS_USER_FACILITY_ATTR_OPT);
+		query.setParameter("nSD", AttributesManager.NS_USER_FACILITY_ATTR_DEF);
+		query.setParameter("nSV", AttributesManager.NS_USER_FACILITY_ATTR_VIRT);
+		query.setParameter("attrNames", attrNames);
+
+		return query.list();
+
 
 		try {
 			return namedParameterJdbcTemplate.query("select " + getAttributeMappingSelectQuery("user_fac") + " from attr_names " +
@@ -1156,7 +1198,6 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 	}
 
 
-
 	@Override
 	public List<Attribute> getAttributes(PerunSession sess, UserExtSource ues, List<String> attrNames) throws InternalErrorException {
 
@@ -1300,6 +1341,18 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 	@Override
 	public Attribute getAttribute(PerunSession sess, Facility facility, String attributeName) throws InternalErrorException, AttributeNotExistsException {
+
+		SessionFactory sessionFactory = new Configuration().configure().buildSessionFactory();
+		Session session = sessionFactory.openSession();
+		session.beginTransaction();
+
+		Query query = session.createQuery("select " + getAttributeMappingSelectQuery("usr") + " from Attribute as attr_names " +
+				"left join facility_attr_values on id=attr_id and facility_id=? where attr_name=?");
+		query.setParameter(0, facility.getId());
+		query.setParameter(1, attributeName);
+
+		//return (Attribute) query.uniqueResult();
+
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("facility_attr_values") + " from attr_names left join facility_attr_values on id=attr_id and facility_id=? where attr_name=?", new SingleBeanAttributeRowMapper<>(sess, this, facility), facility.getId(), attributeName);
 		} catch (EmptyResultDataAccessException ex) {
@@ -1344,6 +1397,18 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 	@Override
 	public Attribute getAttribute(PerunSession sess, Resource resource, String attributeName) throws InternalErrorException, AttributeNotExistsException {
+		SessionFactory sessionFactory = new Configuration().configure().buildSessionFactory();
+		Session session = sessionFactory.openSession();
+		session.beginTransaction();
+
+		Query query = session.createQuery("select " + getAttributeMappingSelectQuery("resource_attr_values") + " from Attribute as attr_names " +
+				"left join resource_attr_values on id=attr_id and resource_id=? where attr_name=?");
+		query.setParameter(0, resource.getId());
+		query.setParameter(1, attributeName);
+
+		//return (Attribute) query.uniqueResult();
+
+
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("resource_attr_values") + " from attr_names left join resource_attr_values on id=attr_id and resource_id=? where attr_name=?", new SingleBeanAttributeRowMapper<>(sess, this, resource), resource.getId(), attributeName);
 		} catch (EmptyResultDataAccessException ex) {
@@ -1355,6 +1420,20 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 	@Override
 	public Attribute getAttribute(PerunSession sess, Resource resource, Member member, String attributeName) throws InternalErrorException, AttributeNotExistsException {
+		SessionFactory sessionFactory = new Configuration().configure().buildSessionFactory();
+		Session session = sessionFactory.openSession();
+		session.beginTransaction();
+
+		Query query = session.createQuery("select " + getAttributeMappingSelectQuery("mem") + " from attr_names " +
+				"left join   member_resource_attr_values mem    on id=mem.attr_id and mem.resource_id=? and member_id=? " +
+				"where attr_name=?");
+
+		query.setParameter(0, resource.getId());
+		query.setParameter(1, member.getId());
+		query.setParameter(2, attributeName);
+
+		//return (Attribute) query.uniqueResult();
+
 		try {
 			//member-resource attributes, member core attributes
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("mem") + " from attr_names " +
@@ -1403,6 +1482,19 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 	@Override
 	public Attribute getAttribute(PerunSession sess, Facility facility, User user, String attributeName) throws InternalErrorException, AttributeNotExistsException {
+		SessionFactory sessionFactory = new Configuration().configure().buildSessionFactory();
+		Session session = sessionFactory.openSession();
+		session.beginTransaction();
+
+		Query query = session.createQuery("select " + getAttributeMappingSelectQuery("usr_fac") + " from Attribute as attr_names " +
+				"left join user_facility_attr_values usr_fac on id=usr_fac.attr_id and facility_id=? and user_id=? " +
+				"where attr_name=?");
+		query.setParameter(0, facility.getId());
+		query.setParameter(1, user.getId());
+		query.setParameter(2, attributeName);
+
+		//return (Attribute) query.uniqueResult();
+
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("usr_fac") + " from attr_names " +
 							"left join    user_facility_attr_values     usr_fac      on id=usr_fac.attr_id     and   facility_id=? and user_id=? " +
@@ -1417,6 +1509,18 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 	@Override
 	public Attribute getAttribute(PerunSession sess, User user, String attributeName) throws InternalErrorException, AttributeNotExistsException {
+		SessionFactory sessionFactory = new Configuration().configure().buildSessionFactory();
+		Session session = sessionFactory.openSession();
+		session.beginTransaction();
+
+		Query query = session.createQuery("select " + getAttributeMappingSelectQuery("usr") + " from Attribute as attr_names " +
+				"left join user_attr_values usr on id=usr.attr_id and user_id=? " + "where attr_name=?");
+		query.setParameter(0, user.getId());
+		query.setParameter(1, attributeName);
+
+		//return (Attribute) query.uniqueResult();
+
+
 		//user and user core attributes
 		try {
 			return jdbc.queryForObject("select " + getAttributeMappingSelectQuery("usr") + " from attr_names " +
@@ -1472,13 +1576,15 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 	}
 
 	@Override
-	public Map<String,String> getEntitylessStringAttributeMapping(PerunSession sess, String attributeName) throws InternalErrorException, AttributeNotExistsException {
+	public Map<String, String> getEntitylessStringAttributeMapping(PerunSession sess, String attributeName) throws InternalErrorException, AttributeNotExistsException {
 		try {
-			Map<String,String> map = new HashMap<>();
+			Map<String, String> map = new HashMap<>();
 			jdbc.query("select subject, attr_value " +
 							" from attr_names join entityless_attr_values on id=attr_id " +
 							" where type='java.lang.String' and attr_name=?",
-					rs -> { map.put(rs.getString(1), rs.getString(2)); }, attributeName);
+					rs -> {
+						map.put(rs.getString(1), rs.getString(2));
+					}, attributeName);
 			return map;
 		} catch (EmptyResultDataAccessException ex) {
 			throw new AttributeNotExistsException("Attribute name: \"" + attributeName + "\"", ex);
@@ -1743,13 +1849,13 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		checkNamespace(sess, attribute, namespace);
 
 		// create lists of parameters for the where clause of the SQL query
-		List<String> columnNames = Arrays.asList( "attr_id", columnName);
-		List<Object> columnValues = Arrays.asList( attribute.getId(), identificator);
+		List<String> columnNames = Arrays.asList("attr_id", columnName);
+		List<Object> columnValues = Arrays.asList(attribute.getId(), identificator);
 
 		// save attribute
 		boolean changedDb = setAttributeInDB(sess, attribute, tableName, columnNames, columnValues);
-		if(changedDb && attribute.isUnique() && (object instanceof PerunBean)) {
-			setUniqueAttributeValues(attribute, columnNames, columnValues, (PerunBean)object, null);
+		if (changedDb && attribute.isUnique() && (object instanceof PerunBean)) {
+			setUniqueAttributeValues(attribute, columnNames, columnValues, (PerunBean) object, null);
 		}
 		return changedDb;
 	}
@@ -1794,12 +1900,12 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		checkNamespace(sess, attribute, namespace);
 
 		// create lists of parameters for the where clause of the SQL query
-		List<String> columnNames = Arrays.asList( "attr_id", name1 + "_id", name2 + "_id");
-		List<Object> columnValues = Arrays.asList( attribute.getId(), identificator1, identificator2);
+		List<String> columnNames = Arrays.asList("attr_id", name1 + "_id", name2 + "_id");
+		List<Object> columnValues = Arrays.asList(attribute.getId(), identificator1, identificator2);
 
 		// save attribute
 		boolean changedDb = setAttributeInDB(sess, attribute, tableName, columnNames, columnValues);
-		if(changedDb && attribute.isUnique()) {
+		if (changedDb && attribute.isUnique()) {
 			setUniqueAttributeValues(attribute, columnNames, columnValues, bean1, bean2);
 		}
 		return changedDb;
@@ -1809,42 +1915,42 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 	private void setUniqueAttributeValues(Attribute attribute, List<String> columnNames, List<Object> columnValues, PerunBean pb1, PerunBean pb2) throws WrongAttributeValueException {
 		String tableName = attributeToTablePrefix(attribute) + "_attr_u_values";
 		jdbc.update("delete from " + tableName + " where " + buildParameters(columnNames, "=?", " and "), columnValues.toArray());
-		if(attribute.getValue()==null) return;
+		if (attribute.getValue() == null) return;
 		// prepare correct number of question marks
 		StringBuilder questionMarks = new StringBuilder();
 		for (int i = 0; i < columnValues.size(); i++) {
 			questionMarks.append(",?");
 		}
 		//prepare list of column values for adding attribute value
-		Object[] sqlArgs = new Object[columnValues.size()+1];
-		System.arraycopy(columnValues.toArray(),0,sqlArgs,1,columnValues.size());
+		Object[] sqlArgs = new Object[columnValues.size() + 1];
+		System.arraycopy(columnValues.toArray(), 0, sqlArgs, 1, columnValues.size());
 		String sql = "INSERT INTO " + tableName + " (attr_value," + buildParameters(columnNames, "", ", ") + ") VALUES (?" + questionMarks + ")";
-			switch (attribute.getType()) {
-				case "java.util.ArrayList":
-				case BeansUtils.largeArrayListClassName:
-					for (String value : (List<String>) attribute.getValue()) {
-						sqlArgs[0] = value;
-						tryToInsertUniqueValue(sql,sqlArgs, attribute, pb1, pb2);
-					}
-					break;
-				case "java.util.LinkedHashMap":
-					for (Map.Entry<String, String> entry : ((Map<String, String>) attribute.getValue()).entrySet()) {
-						sqlArgs[0] = entry.getKey() + "=" + entry.getValue();
-						tryToInsertUniqueValue(sql,sqlArgs, attribute, pb1, pb2);
-					}
-					break;
-				default:
-					sqlArgs[0] = attribute.getValue().toString();
-					tryToInsertUniqueValue(sql,sqlArgs, attribute, pb1, pb2);
-			}
+		switch (attribute.getType()) {
+			case "java.util.ArrayList":
+			case BeansUtils.largeArrayListClassName:
+				for (String value : (List<String>) attribute.getValue()) {
+					sqlArgs[0] = value;
+					tryToInsertUniqueValue(sql, sqlArgs, attribute, pb1, pb2);
+				}
+				break;
+			case "java.util.LinkedHashMap":
+				for (Map.Entry<String, String> entry : ((Map<String, String>) attribute.getValue()).entrySet()) {
+					sqlArgs[0] = entry.getKey() + "=" + entry.getValue();
+					tryToInsertUniqueValue(sql, sqlArgs, attribute, pb1, pb2);
+				}
+				break;
+			default:
+				sqlArgs[0] = attribute.getValue().toString();
+				tryToInsertUniqueValue(sql, sqlArgs, attribute, pb1, pb2);
+		}
 
 	}
 
-	private void tryToInsertUniqueValue(String sql, Object[] sqlArgs, Attribute attribute,PerunBean pb1, PerunBean pb2) throws WrongAttributeValueException {
+	private void tryToInsertUniqueValue(String sql, Object[] sqlArgs, Attribute attribute, PerunBean pb1, PerunBean pb2) throws WrongAttributeValueException {
 		try {
 			jdbc.update(sql, sqlArgs);
 		} catch (DuplicateKeyException ex) {
-			throw new WrongAttributeValueException(attribute, pb1, pb2, "value "+sqlArgs[0]+" is not unique");
+			throw new WrongAttributeValueException(attribute, pb1, pb2, "value " + sqlArgs[0] + " is not unique");
 		}
 	}
 
@@ -1853,7 +1959,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 			//check that attribute definition is current, non-altered by upper tiers
 			getAttributeDefinitionById(sess, attribute.getId()).checkEquality(attribute);
 		} catch (AttributeNotExistsException e) {
-			throw new InternalErrorException("cannot verify attribute definition",e);
+			throw new InternalErrorException("cannot verify attribute definition", e);
 		}
 		try {
 			// deleting the attibute if the given attribute value is null
@@ -2077,7 +2183,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 	public void deleteAttribute(PerunSession sess, AttributeDefinition attribute) throws InternalErrorException {
 		try {
 
-			jdbc.update("DELETE FROM "+ attributeToTablePrefix(attribute)+"_attr_values WHERE attr_id=?", attribute.getId());
+			jdbc.update("DELETE FROM " + attributeToTablePrefix(attribute) + "_attr_values WHERE attr_id=?", attribute.getId());
 			jdbc.update("DELETE FROM attr_names WHERE id=?", attribute.getId());
 			log.debug("Attribute deleted: {}.", attribute);
 		} catch (RuntimeException e) {
@@ -2371,6 +2477,26 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 	@Override
 	public List<Attribute> getRequiredAttributes(PerunSession sess, Service service, Member member, Group group) throws InternalErrorException {
+
+		SessionFactory sessionFactory = new Configuration().configure().buildSessionFactory();
+		Session session = sessionFactory.openSession();
+		session.beginTransaction();
+
+		Query query = session.createQuery("select " + getAttributeMappingSelectQuery("mem_gr") + " from Attribute as attr_names " +
+				"join service_required_attrs on id=service_required_attrs.attr_id and service_required_attrs.service_id=? " +
+				"left join member_group_attr_values mem_gr on id=mem_gr.attr_id and mem_gr.group_id=? and member_id=? " +
+				"where namespace in (?,?,?)");
+
+		query.setParameter(0, service.getId());
+		query.setParameter(1, group.getId());
+		query.setParameter(2, member.getId());
+		query.setParameter(3, AttributesManager.NS_MEMBER_GROUP_ATTR_DEF);
+		query.setParameter(4, AttributesManager.NS_MEMBER_GROUP_ATTR_OPT);
+		query.setParameter(5, AttributesManager.NS_MEMBER_GROUP_ATTR_VIRT);
+
+		//return query.list();
+
+
 		try {
 			return jdbc.query("select " + getAttributeMappingSelectQuery("mem_gr") + " from attr_names " +
 							"join service_required_attrs on id=service_required_attrs.attr_id and service_required_attrs.service_id=? " +
@@ -4226,23 +4352,23 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 	}
 
 	@Override
-	public Set<Pair<Integer,Integer>> getPerunBeanIdsForUniqueAttributeValue(PerunSession sess, Attribute attribute) {
-		if(attribute.getValue()==null) return Collections.emptySet();
+	public Set<Pair<Integer, Integer>> getPerunBeanIdsForUniqueAttributeValue(PerunSession sess, Attribute attribute) {
+		if (attribute.getValue() == null) return Collections.emptySet();
 		String beanPrefix = attributeToTablePrefix(attribute);
 		String sql;
-		if(SINGLE_BEAN_ATTRIBUTES.contains(beanPrefix)) {
-			sql = "select "+beanPrefix+"_id, 0 from "+beanPrefix+"_attr_u_values where attr_id=? and attr_value=?";
-		} else if(DOUBLE_BEAN_ATTRIBUTES.contains(beanPrefix)) {
+		if (SINGLE_BEAN_ATTRIBUTES.contains(beanPrefix)) {
+			sql = "select " + beanPrefix + "_id, 0 from " + beanPrefix + "_attr_u_values where attr_id=? and attr_value=?";
+		} else if (DOUBLE_BEAN_ATTRIBUTES.contains(beanPrefix)) {
 			String[] s = beanPrefix.split("_");
 			String bean1 = s[0];
 			String bean2 = s[1];
 			sql = "select " + bean1 + "_id," + bean2 + "_id from " + beanPrefix + "_attr_u_values where attr_id=? and attr_value=?";
 		} else {
-			throw new RuntimeException("getPerunBeanIdsForUniqueAttributeValue() cannot be used for "+beanPrefix);
+			throw new RuntimeException("getPerunBeanIdsForUniqueAttributeValue() cannot be used for " + beanPrefix);
 		}
 		RowMapper<Pair<Integer, Integer>> pairRowMapper = (rs, i) -> new Pair<>(rs.getInt(1), rs.getInt(2));
-		HashSet<Pair<Integer,Integer>> ids = new HashSet<>();
-		switch(attribute.getType()) {
+		HashSet<Pair<Integer, Integer>> ids = new HashSet<>();
+		switch (attribute.getType()) {
 			case "java.lang.String":
 			case BeansUtils.largeStringClassName:
 			case "java.lang.Integer":
@@ -4251,18 +4377,18 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 				break;
 			case "java.util.ArrayList":
 			case BeansUtils.largeArrayListClassName:
-				for(String value : attribute.valueAsList()) {
-					ids.addAll(jdbc.query(sql, pairRowMapper,attribute.getId(),value));
+				for (String value : attribute.valueAsList()) {
+					ids.addAll(jdbc.query(sql, pairRowMapper, attribute.getId(), value));
 				}
 				break;
 			case "java.util.LinkedHashMap":
-				for(Map.Entry<String,String> entry : attribute.valueAsMap().entrySet()) {
-					ids.addAll(jdbc.query(sql, pairRowMapper,attribute.getId(),entry.getKey()+"="+entry.getValue()));
+				for (Map.Entry<String, String> entry : attribute.valueAsMap().entrySet()) {
+					ids.addAll(jdbc.query(sql, pairRowMapper, attribute.getId(), entry.getKey() + "=" + entry.getValue()));
 
 				}
 				break;
 			default:
-				throw new RuntimeException("unknown attribute type "+attribute.getType());
+				throw new RuntimeException("unknown attribute type " + attribute.getType());
 		}
 		return ids;
 	}
@@ -4305,7 +4431,6 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 						}
 						int c = counter.addAndGet(1);
 						if(c%1000==0) log.debug("{} values of {} were converted", c, attrDef.getName());
-
 					} catch (InternalErrorException e) {
 						throw new InternalErrorRuntimeException(e);
 					} catch (DuplicateKeyException ex) {
@@ -4363,10 +4488,10 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 			if (Compatibility.isOracle()) {
 				//large attributes
 				Clob clob = rs.getClob("attr_value_text");
-				try(Reader characterStream = clob.getCharacterStream()) {
+				try (Reader characterStream = clob.getCharacterStream()) {
 					return CharStreams.toString(characterStream);
 				} catch (IOException e) {
-					throw new InternalErrorRuntimeException("cannot read CLOB",e);
+					throw new InternalErrorRuntimeException("cannot read CLOB", e);
 				} finally {
 					clob.free();
 				}
