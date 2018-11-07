@@ -4,6 +4,10 @@ import cz.metacentrum.perun.core.api.*;
 import cz.metacentrum.perun.core.api.exceptions.*;
 import cz.metacentrum.perun.core.implApi.UsersManagerImplApi;
 import cz.metacentrum.perun.core.implApi.modules.pwdmgr.PasswordManagerModule;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.cfg.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
@@ -140,13 +144,27 @@ public class UsersManagerImpl implements UsersManagerImplApi {
 
 	@Override
 	public User getUserById(PerunSession sess, int id) throws InternalErrorException, UserNotExistsException {
-		try {
+
+		Configuration configuration = new Configuration();
+		configuration.configure("hibernate.cfg.xml");
+		SessionFactory sessionFactory = configuration.buildSessionFactory();
+		Session session = sessionFactory.openSession();
+		Transaction tx = session.beginTransaction();
+
+		User u = session.find(User.class, id);
+
+		tx.commit();
+
+		session.close();
+		return u;
+
+		/*try {
 			return jdbc.queryForObject("select " + userMappingSelectQuery + " from users where users.id=? ", USER_MAPPER, id);
 		} catch (EmptyResultDataAccessException ex) {
 			throw new UserNotExistsException("user id=" + id);
 		} catch (RuntimeException ex) {
 			throw new InternalErrorException(ex);
-		}
+		}*/
 	}
 
 	@Override
@@ -558,6 +576,15 @@ public class UsersManagerImpl implements UsersManagerImplApi {
 		// create sql toDate()
 		String compareDate = BeansUtils.getDateFormatterWithoutTime().format(date.getTime());
 
+		SessionFactory sessionFactory = new Configuration().configure().buildSessionFactory();
+		Session session = sessionFactory.openSession();
+		session.beginTransaction();
+
+		/*TypedQuery<UserExtSource> query = session.createQuery("select " + userExtSourceMappingSelectQuery + ", " + ExtSourcesManagerImpl.extSourceMappingSelectQuery +
+				" from UserExtSource as UextS left join ExtSource extS on UextS.extSource.id=extS.id where " +
+						" UextS.userId=? and " +
+						" UextS.last_access > " + Compatibility.toDate("'" + compareDate + "'", "'YYYY-MM-DD'"),UserExtSource.class)
+*/
 		try {
 			String query = "select " + userExtSourceMappingSelectQuery + ", " + ExtSourcesManagerImpl.extSourceMappingSelectQuery +
 					" from user_ext_sources left join ext_sources on user_ext_sources.ext_sources_id=ext_sources.id where " +
@@ -600,13 +627,29 @@ public class UsersManagerImpl implements UsersManagerImplApi {
 
 	@Override
 	public List<UserExtSource> getUserExtSources(PerunSession sess, User user) throws InternalErrorException {
-		try {
+
+		Configuration configuration = new Configuration();
+		configuration.configure("hibernate.cfg.xml");
+		SessionFactory sessionFactory = configuration.buildSessionFactory();
+		Session session = sessionFactory.openSession();
+		Transaction tx = session.beginTransaction();
+
+		List<UserExtSource> userExtSources = session.createQuery("select u From UserExtSource u where u.userId=?", UserExtSource.class)
+				.setParameter(0,user.getId()).getResultList();
+
+		tx.commit();
+		session.close();
+
+		return userExtSources;
+
+
+		/*try {
 			return jdbc.query("SELECT " + userExtSourceMappingSelectQuery + "," + ExtSourcesManagerImpl.extSourceMappingSelectQuery +
 			        " FROM user_ext_sources left join ext_sources on user_ext_sources.ext_sources_id=ext_sources.id" +
 			        " WHERE user_ext_sources.user_id=?", USEREXTSOURCE_MAPPER, user.getId());
 		} catch (RuntimeException e) {
 			throw new InternalErrorException(e);
-		}
+		}*/
 
 	}
 
@@ -1038,12 +1081,25 @@ public class UsersManagerImpl implements UsersManagerImplApi {
 		Utils.notNull(userExtSource.getLogin(), "userExtSource.getLogin");
 		Utils.notNull(userExtSource.getExtSource(), "userExtSource.getExtSource");
 
+		Configuration configuration = new Configuration();
+		configuration.configure("hibernate.cfg.xml");
+		SessionFactory sessionFactory = configuration.buildSessionFactory();
+		Session session = sessionFactory.openSession();
+		session.beginTransaction();
+
 		try {
 
 			// check by ext identity (login/ext source ID)
 			if (userExtSource.getUserId() >= 0) {
-				int numberOfExistences = jdbc.queryForInt("select count(1) from user_ext_sources where login_ext=? and ext_sources_id=? and user_id=?",
-						userExtSource.getLogin(), userExtSource.getExtSource().getId(), userExtSource.getUserId());
+				/*int numberOfExistences = jdbc.queryForInt("select count(1) from user_ext_sources where login_ext=? and ext_sources_id=? and user_id=?",
+						userExtSource.getLogin(), userExtSource.getExtSource().getId(), userExtSource.getUserId());*/
+
+				int numberOfExistences = session.createQuery("select count(*) from UserExtSource u where u.login=? and u.extSource=? and u.userId=?", Long.class)
+						.setParameter(0, userExtSource.getLogin())
+						.setParameter(1, userExtSource.getExtSource())
+						.setParameter(2, userExtSource.getUserId())
+						.getSingleResult().intValue();
+
 				if (numberOfExistences == 1) {
 					return true;
 				} else if (numberOfExistences > 1) {
@@ -1051,8 +1107,14 @@ public class UsersManagerImpl implements UsersManagerImplApi {
 				}
 				return false;
 			} else {
-				int numberOfExistences = jdbc.queryForInt("select count(1) from user_ext_sources where login_ext=? and ext_sources_id=?",
-						userExtSource.getLogin(), userExtSource.getExtSource().getId());
+				/*int numberOfExistences = jdbc.queryForInt("select count(1) from user_ext_sources where login_ext=? and ext_sources_id=?",
+						userExtSource.getLogin(), userExtSource.getExtSource().getId());*/
+
+				int numberOfExistences = session.createQuery("select count(*) from UserExtSource u where u.login=? and u.extSource=?", Long.class)
+						.setParameter(0, userExtSource.getLogin())
+						.setParameter(1, userExtSource.getExtSource())
+						.getSingleResult().intValue();
+
 				if (numberOfExistences == 1) {
 					return true;
 				} else if (numberOfExistences > 1) {

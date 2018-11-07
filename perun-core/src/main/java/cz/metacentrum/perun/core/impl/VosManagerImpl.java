@@ -7,6 +7,10 @@ import cz.metacentrum.perun.core.api.exceptions.VoExistsException;
 import cz.metacentrum.perun.core.api.exceptions.VoNotExistsException;
 import cz.metacentrum.perun.core.blImpl.AuthzResolverBlImpl;
 import cz.metacentrum.perun.core.implApi.VosManagerImplApi;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.cfg.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -89,13 +93,27 @@ public class VosManagerImpl implements VosManagerImplApi {
 
 	@Override
 	public Vo getVoById(PerunSession sess, int id) throws VoNotExistsException, InternalErrorException {
-		try {
-			return jdbc.queryForObject("select " + voMappingSelectQuery + " from vos where id=?", VO_MAPPER, id);
+
+		Configuration configuration = new Configuration();
+		configuration.configure("hibernate.cfg.xml");
+		SessionFactory sessionFactory = configuration.buildSessionFactory();
+		Session session = sessionFactory.openSession();
+		Transaction tx = session.beginTransaction();
+
+		Vo vo = session.find(Vo.class, id);
+
+		tx.commit();
+		session.close();
+
+		return vo;
+
+		/*try {
+			//return jdbc.queryForObject("select " + voMappingSelectQuery + " from vos where id=?", VO_MAPPER, id);
 		} catch(EmptyResultDataAccessException ex) {
 			throw new VoNotExistsException(ex);
 		} catch (RuntimeException ex) {
 			throw new InternalErrorException(ex);
-		}
+		}*/
 	}
 
 	@Override
