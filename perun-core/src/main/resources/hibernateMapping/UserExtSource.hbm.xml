@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="cz.metacentrum.perun.core.api.UserExtSource" table="user_ext_sources">
+
+        <id name="id" type="org.hibernate.type.IntegerType">
+            <column name="id" not-null="true"/>
+        </id>
+
+        <property name="userId" type="org.hibernate.type.IntegerType">
+            <column name="user_id" not-null="true"/>
+        </property>
+        <property name="login" type="org.hibernate.type.StringType">
+            <column name="login_ext" length="1300" not-null="true"/>
+        </property>
+
+        <many-to-one name="extSource" unique="true" class="cz.metacentrum.perun.core.api.ExtSource" >
+            <column name="ext_sources_id" not-null="true" />
+        </many-to-one>
+
+        <property name="loa" type="org.hibernate.type.IntegerType">
+            <column name="loa"/>
+        </property>
+        <!-- Ako boolean persistent je v DB ?? -->
+
+        <property name="createdAt" >
+            <column name="created_at" not-null="true" />
+            <type name="converted::cz.metacentrum.perun.core.api.AttributeConverters.TimeStampConverter" />
+        </property>
+        <property name="createdBy" type="org.hibernate.type.StringType">
+            <column name="created_by" length="1300" default="user" not-null="true" />
+        </property>
+        <property name="modifiedAt" >
+            <column name="modified_at" not-null="true" />
+            <type name="converted::cz.metacentrum.perun.core.api.AttributeConverters.TimeStampConverter" />
+        </property>
+
+        <property name="createdByUid" type="org.hibernate.type.IntegerType">
+            <column name="created_by_uid" />
+        </property>
+        <property name="modifiedByUid" type="org.hibernate.type.IntegerType">
+            <column name="modified_by_uid" />
+        </property>
+
+    </class>
+</hibernate-mapping>
+
