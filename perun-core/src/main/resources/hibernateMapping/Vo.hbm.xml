@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="cz.metacentrum.perun.core.api.Vo" table="vos" >
+        <id name="id" type="org.hibernate.type.IntegerType">
+            <column name="id" not-null="true"/>
+        </id>
+
+        <property name="name" type="org.hibernate.type.StringType">
+            <column name="name" length="128" not-null="true" />
+        </property>
+        <property name="shortName" type="org.hibernate.type.StringType">
+            <column name="short_name" length="32" not-null="true" />
+        </property>
+
+        <property name="createdAt" >
+            <column name="created_at" not-null="true" />
+            <type name="converted::cz.metacentrum.perun.core.api.AttributeConverters.TimeStampConverter" />
+        </property>
+        <property name="createdBy" type="org.hibernate.type.StringType">
+            <column name="created_by" length="1300" default="user" not-null="true" />
+        </property>
+        <property name="modifiedAt" >
+            <column name="modified_at" not-null="true" />
+            <type name="converted::cz.metacentrum.perun.core.api.AttributeConverters.TimeStampConverter" />
+        </property>
+
+        <property name="createdByUid" type="org.hibernate.type.IntegerType">
+            <column name="created_by_uid" />
+        </property>
+        <property name="modifiedByUid" type="org.hibernate.type.IntegerType">
+            <column name="modified_by_uid" />
+        </property>
+    </class>
+</hibernate-mapping>

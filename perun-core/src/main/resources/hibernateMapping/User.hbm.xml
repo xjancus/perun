@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="cz.metacentrum.perun.core.api.User" table="users">
+        <id name="id" type="org.hibernate.type.IntegerType">
+            <column name="id" not-null="true"/>
+        </id>
+
+        <property name="firstName" type="org.hibernate.type.StringType">
+            <column name="first_name" length="64" />
+        </property>
+        <property name="lastName" type="org.hibernate.type.StringType">
+            <column name="last_name" length="64" />
+        </property>
+        <property name="middleName" type="org.hibernate.type.StringType">
+            <column name="middle_name" length="64" />
+        </property>
+        <property name="titleBefore" type="org.hibernate.type.StringType">
+            <column name="title_before" length="64" />
+        </property>
+        <property name="titleAfter" type="org.hibernate.type.StringType">
+            <column name="title_after" length="64" />
+        </property>
+
+        <property name="serviceUser" >
+            <column name="service_acc" length="1" default="0" not-null="true"/>
+            <type name="converted::cz.metacentrum.perun.core.api.AttributeConverters.UserSpecificTypeConverter" />
+        </property>
+        <property name="sponsoredUser" >
+            <column name="sponsored_acc" length="1" default="0" not-null="true"/>
+            <type name="converted::cz.metacentrum.perun.core.api.AttributeConverters.UserSpecificTypeConverter" />
+        </property>
+
+        <property name="createdAt" >
+            <column name="created_at" not-null="true" />
+            <type name="converted::cz.metacentrum.perun.core.api.AttributeConverters.TimeStampConverter" />
+        </property>
+        <property name="createdBy" type="org.hibernate.type.StringType">
+            <column name="created_by" length="1300" default="user" not-null="true" />
+        </property>
+        <property name="modifiedAt" >
+            <column name="modified_at" not-null="true" />
+            <type name="converted::cz.metacentrum.perun.core.api.AttributeConverters.TimeStampConverter" />
+        </property>
+        <property name="modifiedBy" type="org.hibernate.type.StringType">
+            <column name="modified_by" length="1300" default="user" not-null="true" />
+        </property>
+
+        <property name="createdByUid" type="org.hibernate.type.IntegerType">
+            <column name="created_by_uid" />
+        </property>
+        <property name="modifiedByUid" type="org.hibernate.type.IntegerType">
+            <column name="modified_by_uid" />
+        </property>
+    </class>
+</hibernate-mapping>

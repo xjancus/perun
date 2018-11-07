@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="cz.metacentrum.perun.core.api.Member" table="members">
+
+        <id name="id" type="org.hibernate.type.IntegerType">
+            <column name="id" not-null="true"/>
+        </id>
+
+        <property name="userId" type="org.hibernate.type.IntegerType">
+            <column name="user_id" not-null="true"/>
+        </property>
+        <property name="voId" type="org.hibernate.type.IntegerType">
+            <column name="vo_id" not-null="true"/>
+        </property>
+        <property name="status" >
+            <column name="status" default="0" not-null="true" />
+            <type name="converted::cz.metacentrum.perun.core.api.AttributeConverters.MemberStatusConverter" />
+        </property>
+        <property name="sponsored" type="org.hibernate.type.BooleanType">
+            <column name="sponsored" default="f" not-null="true" />
+        </property>
+
+        <property name="createdAt" >
+            <column name="created_at" not-null="true" />
+            <type name="converted::cz.metacentrum.perun.core.api.AttributeConverters.TimeStampConverter" />
+        </property>
+        <property name="createdBy" type="org.hibernate.type.StringType">
+            <column name="created_by" length="1300" default="user" not-null="true" />
+        </property>
+        <property name="modifiedAt" >
+            <column name="modified_at" not-null="true" />
+            <type name="converted::cz.metacentrum.perun.core.api.AttributeConverters.TimeStampConverter" />
+        </property>
+
+        <property name="createdByUid" type="org.hibernate.type.IntegerType">
+            <column name="created_by_uid" />
+        </property>
+        <property name="modifiedByUid" type="org.hibernate.type.IntegerType">
+            <column name="modified_by_uid" />
+        </property>
+    </class>
+</hibernate-mapping>
