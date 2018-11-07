@@ -9,6 +9,10 @@ import javax.sql.DataSource;
 
 import cz.metacentrum.perun.core.api.MemberGroupStatus;
 import cz.metacentrum.perun.core.api.exceptions.GroupRelationDoesNotExist;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.cfg.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
@@ -452,7 +456,22 @@ public class GroupsManagerImpl implements GroupsManagerImplApi {
 
 	@Override
 	public List<Group> getSubGroups(PerunSession sess, Group parentGroup) throws InternalErrorException {
-		try {
+		Configuration configuration = new Configuration();
+		configuration.configure("hibernate.cfg.xml");
+		SessionFactory sessionFactory = configuration.buildSessionFactory();
+		Session session = sessionFactory.openSession();
+		Transaction tx = session.beginTransaction();
+
+		List<Group> groups = session.createQuery("select g from Group g where g.parentGroupId=? order by g.name", Group.class)
+				.setParameter(0, parentGroup.getId())
+				.getResultList();
+
+		tx.commit();
+		session.close();
+
+		return groups;
+
+/*		try {
 			return jdbc.query("select " + groupMappingSelectQuery + " from groups where groups.parent_group_id=? " +
 							"order by " + Compatibility.orderByBinary("groups.name" + Compatibility.castToVarchar()),
 					GROUP_MAPPER, parentGroup.getId());
@@ -460,7 +479,7 @@ public class GroupsManagerImpl implements GroupsManagerImplApi {
 			return new ArrayList<Group>();
 		} catch(RuntimeException ex) {
 			throw new InternalErrorException(ex);
-		}
+		}*/
 	}
 
 	@Override

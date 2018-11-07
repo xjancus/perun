@@ -7,6 +7,10 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.cfg.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -328,7 +332,20 @@ public class FacilitiesManagerImpl implements FacilitiesManagerImplApi {
 
 	@Override
 	public Facility getFacilityById(PerunSession sess, int id) throws InternalErrorException, FacilityNotExistsException {
-		try {
+
+		Configuration configuration = new Configuration();
+		configuration.configure("hibernate.cfg.xml");
+		SessionFactory sessionFactory = configuration.buildSessionFactory();
+		Session session = sessionFactory.openSession();
+		Transaction tx = session.beginTransaction();
+
+		Facility f = session.find(Facility.class, id);
+
+		tx.commit();
+		session.close();
+		return f;
+
+/*		try {
 			return jdbc.queryForObject("select " + facilityMappingSelectQuery + " from facilities where id=?", FACILITY_MAPPER, id);
 		} catch (EmptyResultDataAccessException ex) {
 			Facility fac = new Facility();
@@ -336,7 +353,7 @@ public class FacilitiesManagerImpl implements FacilitiesManagerImplApi {
 			throw new FacilityNotExistsException(fac);
 		} catch (RuntimeException ex) {
 			throw new InternalErrorException(ex);
-		}
+		}*/
 	}
 
 	@Override

@@ -5,9 +5,15 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.persistence.TypedQuery;
 import javax.sql.DataSource;
 
 import cz.metacentrum.perun.core.api.exceptions.ConsistencyErrorException;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.cfg.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -272,13 +278,26 @@ public class ServicesManagerImpl implements ServicesManagerImplApi {
 
 	@Override
 	public Service getServiceById(PerunSession sess, int id) throws InternalErrorException, ServiceNotExistsException {
-		try {
+		Configuration configuration = new Configuration();
+		configuration.configure("hibernate.cfg.xml");
+		SessionFactory sessionFactory = configuration.buildSessionFactory();
+		Session session = sessionFactory.openSession();
+		Transaction tx = session.beginTransaction();
+
+		Service service = session.find(Service.class, id);
+
+		tx.commit();
+		session.close();
+
+		return service;
+
+		/*try {
 			return jdbc.queryForObject("select " + serviceMappingSelectQuery + " from services where id=?", SERVICE_MAPPER, id);
 		} catch(EmptyResultDataAccessException ex) {
 			throw new ServiceNotExistsException("Service not exists. Id=" + id);
 		} catch(RuntimeException ex) {
 			throw new InternalErrorException(ex);
-		}
+		}*/
 	}
 
 	@Override
@@ -473,8 +492,22 @@ public class ServicesManagerImpl implements ServicesManagerImplApi {
 
 	@Override
 	public boolean serviceExists(PerunSession sess, Service service) throws InternalErrorException {
+
+		Configuration configuration = new Configuration();
+		configuration.configure("hibernate.cfg.xml");
+		SessionFactory sessionFactory = configuration.buildSessionFactory();
+		Session session = sessionFactory.openSession();
+		Transaction tx = session.beginTransaction();
+
+		int numberOfExistences = session.createQuery("select count(*) from Service s where s.id=?", Long.class)
+				.setParameter(0, service.getId())
+				.getSingleResult().intValue();
+
+		tx.commit();
+		session.close();
+
 		try {
-			int numberOfExistences = jdbc.queryForInt("select count(1) from services where id=?", service.getId());
+			//int numberOfExistences = jdbc.queryForInt("select count(1) from services where id=?", service.getId());
 			if (numberOfExistences == 1) {
 				return true;
 			} else if (numberOfExistences > 1) {

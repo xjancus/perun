@@ -7,6 +7,10 @@ import cz.metacentrum.perun.core.api.exceptions.InternalErrorException;
 import cz.metacentrum.perun.core.api.exceptions.MemberAlreadyRemovedException;
 import cz.metacentrum.perun.core.api.exceptions.MemberNotExistsException;
 import cz.metacentrum.perun.core.implApi.MembersManagerImplApi;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.cfg.Configuration;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcPerunTemplate;
@@ -15,6 +19,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
+import javax.persistence.NoResultException;
 import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -104,7 +109,29 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 
 	@Override
 	public Member getMemberByUserId(PerunSession sess, Vo vo, int userId) throws InternalErrorException, MemberNotExistsException {
+
+		Configuration configuration = new Configuration();
+		configuration.configure("hibernate.cfg.xml");
+		SessionFactory sessionFactory = configuration.buildSessionFactory();
+		Session session = sessionFactory.openSession();
+		Transaction tx = session.beginTransaction();
+
 		try {
+			Member member = session.createQuery("Select m from Member m where m.userId=? and m.voId=?", Member.class)
+					.setParameter(0, userId)
+					.setParameter(1, vo.getId())
+					.uniqueResult();
+
+
+			tx.commit();
+
+			session.close();
+			return member;
+		} catch (NoResultException e) {
+			throw new MemberNotExistsException("user id " + userId + " is not member of VO " + vo);
+		}
+
+/*		try {
 			return jdbc.queryForObject("SELECT " + memberMappingSelectQuery + " FROM" +
 							" members WHERE members.user_id=? AND members.vo_id=?",
 					MEMBER_MAPPER, userId, vo.getId());
@@ -112,7 +139,7 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 			throw new MemberNotExistsException("user id " + userId + " is not member of VO " + vo);
 		} catch (RuntimeException err) {
 			throw new InternalErrorException(err);
-		}
+		}*/
 	}
 
 	@Override
