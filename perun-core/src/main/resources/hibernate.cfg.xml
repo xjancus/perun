@@ -10,37 +10,38 @@
         <property name="connection.driver_class">org.postgresql.Driver</property>
         <property name="connection.url">jdbc:postgresql://localhost:5432/perun</property>
         <property name="connection.username">perun</property>
-        <property name="connection.password"></property>
+        <property name="connection.password">123</property>
         <!--  JDBC connection pool (use the built-in)
         -->
         <property name="connection.pool_size">1</property>
 
         <!--  Disable the second-level cache
-        -->
-        <property name="cache.provider_class">org.hibernate.cache.internal.CollectionCacheInvalidator</property>
+
+        <property name="cache.provider_class">org.hibernate.cache.internal.CollectionCacheInvalidator</property> -->
         <!--  Echo all executed SQL to stdout
         -->
         <property name="show_sql">true</property>
-        <!--  Drop and re-create the database schema on startup
+        <!--
         -->
-        <property name="hbm2ddl.auto">update</property>
+        <property name="hbm2ddl.auto">validate</property>
 
         <!--  SQL dialect
         -->
-        <property name="dialect">org.hibernate.dialect.PostgreSQL81Dialect</property>
+        <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQL95Dialect</property>
 
         <!--  Names the annotated entity class-->
 
-        <mapping class="cz.metacentrum.perun.core.api.PerunBean"/>
-        <mapping class="cz.metacentrum.perun.core.api.Attribute"/>
-        <mapping class="cz.metacentrum.perun.core.api.AttributeDefinition"/>
-        <mapping class="cz.metacentrum.perun.core.api.Facility"/>
-        <mapping class="cz.metacentrum.perun.core.api.Resource"/>
-        <mapping class="cz.metacentrum.perun.core.api.RichAttribute"/>
-        <mapping class="cz.metacentrum.perun.core.api.Service"/>
-        <mapping class="cz.metacentrum.perun.core.api.User"/>
+        <property name="hibernate.enable_lazy_load_no_trans">true</property>
 
-        <mapping resource="/hibernateMapping/PerunBean.hbm.xml"/>
+        <mapping resource="hibernateMapping/Facility.hbm.xml" />
+        <mapping resource="hibernateMapping/User.hbm.xml" />
+        <mapping resource="hibernateMapping/UserExtSource.hbm.xml" />
+        <mapping resource="hibernateMapping/ExtSource.hbm.xml" />
+        <mapping resource="hibernateMapping/Resource.hbm.xml" />
+        <mapping resource="hibernateMapping/Service.hbm.xml" />
+        <mapping resource="hibernateMapping/Vo.hbm.xml" />
+        <mapping resource="hibernateMapping/Group.hbm.xml" />
+        <mapping resource="hibernateMapping/Member.hbm.xml" />
 
     </session-factory>
 </hibernate-configuration>
