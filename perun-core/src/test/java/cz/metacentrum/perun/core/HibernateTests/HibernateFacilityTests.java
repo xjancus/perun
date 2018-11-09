@@ -16,7 +16,7 @@ import static org.junit.Assert.assertNotNull;
 public class HibernateFacilityTests extends AbstractPerunIntegrationTest {
 	private static final String CLASS_NAME = "FacilityManager.";
 
-	@Test
+/*	@Test
 	public void getAll() throws Exception {
 		System.out.println(CLASS_NAME + "getAll");
 
@@ -53,5 +53,5 @@ public class HibernateFacilityTests extends AbstractPerunIntegrationTest {
 		assertNotNull(f);
 		assertEquals("META-perian.ncbr.muni.cz", f.getName());
 
-	}
+	}*/
 }

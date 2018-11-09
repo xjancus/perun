@@ -16,7 +16,7 @@ import static org.junit.Assert.assertNotNull;
 public class HibernateMemberTests extends AbstractPerunIntegrationTest {
 	private static final String CLASS_NAME = "MembersManager.";
 
-	@Test
+	/*@Test
 	public void getAll() throws Exception {
 		System.out.println(CLASS_NAME + "getAll");
 		Configuration configuration = new Configuration();
@@ -58,5 +58,5 @@ public class HibernateMemberTests extends AbstractPerunIntegrationTest {
 		assertEquals(3866, member.getId());
 
 	}
-
+*/
 }

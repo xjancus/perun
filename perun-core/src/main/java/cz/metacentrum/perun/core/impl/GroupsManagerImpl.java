@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.persistence.NoResultException;
 import javax.sql.DataSource;
 
 import cz.metacentrum.perun.core.api.MemberGroupStatus;
@@ -456,20 +457,28 @@ public class GroupsManagerImpl implements GroupsManagerImplApi {
 
 	@Override
 	public List<Group> getSubGroups(PerunSession sess, Group parentGroup) throws InternalErrorException {
-		Configuration configuration = new Configuration();
-		configuration.configure("hibernate.cfg.xml");
-		SessionFactory sessionFactory = configuration.buildSessionFactory();
-		Session session = sessionFactory.openSession();
-		Transaction tx = session.beginTransaction();
+		try {
+			Configuration configuration = new Configuration();
+			configuration.configure("hibernate.cfg.xml");
+			SessionFactory sessionFactory = configuration.buildSessionFactory();
+			Session session = sessionFactory.openSession();
+			Transaction tx = session.beginTransaction();
 
-		List<Group> groups = session.createQuery("select g from Group g where g.parentGroupId=? order by g.name", Group.class)
-				.setParameter(0, parentGroup.getId())
+			List<Group> groups = session.createQuery("select g from Group g where g.parentGroupId= :pgId order by g.name", Group.class)
+				.setParameter("pgId", parentGroup.getId())
 				.getResultList();
 
-		tx.commit();
-		session.close();
+			tx.commit();
+			session.close();
 
-		return groups;
+			return groups;
+		} catch (NoResultException ex) {
+			return new ArrayList<Group>();
+		} catch (RuntimeException ex) {
+			throw new InternalErrorException(ex);
+		}
+
+
 
 /*		try {
 			return jdbc.query("select " + groupMappingSelectQuery + " from groups where groups.parent_group_id=? " +

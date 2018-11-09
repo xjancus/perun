@@ -17,6 +17,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcPerunTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
+import javax.persistence.NoResultException;
 import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -94,18 +95,30 @@ public class VosManagerImpl implements VosManagerImplApi {
 	@Override
 	public Vo getVoById(PerunSession sess, int id) throws VoNotExistsException, InternalErrorException {
 
-		Configuration configuration = new Configuration();
-		configuration.configure("hibernate.cfg.xml");
-		SessionFactory sessionFactory = configuration.buildSessionFactory();
-		Session session = sessionFactory.openSession();
-		Transaction tx = session.beginTransaction();
+		try {
+			Configuration configuration = new Configuration();
+			configuration.configure("hibernate.cfg.xml");
+			SessionFactory sessionFactory = configuration.buildSessionFactory();
+			Session session = sessionFactory.openSession();
+			Transaction tx = session.beginTransaction();
 
-		Vo vo = session.find(Vo.class, id);
+			//Vo vo = session.find(Vo.class, id);
 
-		tx.commit();
-		session.close();
+			Vo vo = session.createQuery("Select vo From Vo vo Where vo.id= :voId", Vo.class)
+				.setParameter("voId", id)
+				.getSingleResult();
 
-		return vo;
+			tx.commit();
+			session.close();
+
+			return vo;
+
+		} catch (NoResultException ex) {
+			throw new VoNotExistsException(ex);
+		} catch (RuntimeException ex) {
+			throw new InternalErrorException(ex);
+		}
+
 
 		/*try {
 			//return jdbc.queryForObject("select " + voMappingSelectQuery + " from vos where id=?", VO_MAPPER, id);

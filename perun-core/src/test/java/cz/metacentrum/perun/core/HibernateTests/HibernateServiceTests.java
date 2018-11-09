@@ -17,7 +17,7 @@ import static org.junit.Assert.assertTrue;
 public class HibernateServiceTests extends AbstractPerunIntegrationTest {
 	private final static String CLASS_NAME = "ServicesManager.";
 
-	@Test
+	/*@Test
 	public void getServices() throws Exception {
 		System.out.println(CLASS_NAME + "getAll");
 
@@ -74,5 +74,5 @@ public class HibernateServiceTests extends AbstractPerunIntegrationTest {
 
 		assertTrue(numberOfExistences == 1);
 		assertNotNull(numberOfExistences);
-	}
+	}*/
 }

@@ -5,12 +5,15 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.persistence.NoResultException;
 import javax.persistence.TypedQuery;
 import javax.sql.DataSource;
 
 import cz.metacentrum.perun.core.api.exceptions.ConsistencyErrorException;
+import org.hibernate.CacheMode;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.StatelessSession;
 import org.hibernate.Transaction;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
@@ -278,26 +281,36 @@ public class ServicesManagerImpl implements ServicesManagerImplApi {
 
 	@Override
 	public Service getServiceById(PerunSession sess, int id) throws InternalErrorException, ServiceNotExistsException {
-		Configuration configuration = new Configuration();
-		configuration.configure("hibernate.cfg.xml");
-		SessionFactory sessionFactory = configuration.buildSessionFactory();
-		Session session = sessionFactory.openSession();
-		Transaction tx = session.beginTransaction();
 
-		Service service = session.find(Service.class, id);
+/*		try {
+			Configuration configuration = new Configuration();
+			configuration.configure("hibernate.cfg.xml");
+			SessionFactory sessionFactory = configuration.buildSessionFactory();
+			Session session = sessionFactory.openSession();
+			Transaction tx = session.beginTransaction();
 
-		tx.commit();
-		session.close();
+			Service service = session.createQuery("Select s From Service s where s.id= :sId", Service.class)
+				.setParameter("sId", id)
+				.getSingleResult();
 
-		return service;
+			tx.commit();
+			session.close();
 
-		/*try {
+			return service;
+		} catch (NoResultException ex) {
+			throw new ServiceNotExistsException("Service not exists. Id=" + id);
+		} catch (RuntimeException ex) {
+			throw new InternalErrorException(ex);
+		}*/
+
+
+		try {
 			return jdbc.queryForObject("select " + serviceMappingSelectQuery + " from services where id=?", SERVICE_MAPPER, id);
 		} catch(EmptyResultDataAccessException ex) {
 			throw new ServiceNotExistsException("Service not exists. Id=" + id);
 		} catch(RuntimeException ex) {
 			throw new InternalErrorException(ex);
-		}*/
+		}
 	}
 
 	@Override
@@ -492,21 +505,20 @@ public class ServicesManagerImpl implements ServicesManagerImplApi {
 
 	@Override
 	public boolean serviceExists(PerunSession sess, Service service) throws InternalErrorException {
+		try {
+			Configuration configuration = new Configuration();
+			configuration.configure("hibernate.cfg.xml");
+			SessionFactory sessionFactory = configuration.buildSessionFactory();
+			Session session = sessionFactory.openSession();
+			Transaction tx = session.beginTransaction();
 
-		Configuration configuration = new Configuration();
-		configuration.configure("hibernate.cfg.xml");
-		SessionFactory sessionFactory = configuration.buildSessionFactory();
-		Session session = sessionFactory.openSession();
-		Transaction tx = session.beginTransaction();
-
-		int numberOfExistences = session.createQuery("select count(*) from Service s where s.id=?", Long.class)
-				.setParameter(0, service.getId())
+			int numberOfExistences = session.createQuery("select count(*) from Service s where s.id= :sId", Long.class)
+				.setParameter("sId", service.getId())
 				.getSingleResult().intValue();
 
-		tx.commit();
-		session.close();
+			tx.commit();
+			session.close();
 
-		try {
 			//int numberOfExistences = jdbc.queryForInt("select count(1) from services where id=?", service.getId());
 			if (numberOfExistences == 1) {
 				return true;

@@ -18,6 +18,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
+import javax.persistence.NoResultException;
 import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -145,18 +146,31 @@ public class UsersManagerImpl implements UsersManagerImplApi {
 	@Override
 	public User getUserById(PerunSession sess, int id) throws InternalErrorException, UserNotExistsException {
 
-		Configuration configuration = new Configuration();
-		configuration.configure("hibernate.cfg.xml");
-		SessionFactory sessionFactory = configuration.buildSessionFactory();
-		Session session = sessionFactory.openSession();
-		Transaction tx = session.beginTransaction();
+		try {
+			Configuration configuration = new Configuration();
+			configuration.configure("hibernate.cfg.xml");
+			SessionFactory sessionFactory = configuration.buildSessionFactory();
+			Session session = sessionFactory.openSession();
+			Transaction tx = session.beginTransaction();
 
-		User u = session.find(User.class, id);
+			//User u = session.find(User.class, id);
+			User u = session.createQuery("Select u from User u where u.id= :uId", User.class)
+				.setParameter("uId", id)
+				.getSingleResult();
 
-		tx.commit();
+			tx.commit();
 
-		session.close();
-		return u;
+			session.close();
+			return u;
+		} catch (NoResultException ex) {
+			User user = new User();
+			user.setId(id);
+			throw new UserNotExistsException(user);
+		} catch (RuntimeException ex) {
+			throw new InternalErrorException(ex);
+		}
+
+
 
 		/*try {
 			return jdbc.queryForObject("select " + userMappingSelectQuery + " from users where users.id=? ", USER_MAPPER, id);
@@ -576,10 +590,12 @@ public class UsersManagerImpl implements UsersManagerImplApi {
 		// create sql toDate()
 		String compareDate = BeansUtils.getDateFormatterWithoutTime().format(date.getTime());
 
-		SessionFactory sessionFactory = new Configuration().configure().buildSessionFactory();
+
+		//TODO
+		/*SessionFactory sessionFactory = new Configuration().configure().buildSessionFactory();
 		Session session = sessionFactory.openSession();
 		session.beginTransaction();
-
+*/
 		/*TypedQuery<UserExtSource> query = session.createQuery("select " + userExtSourceMappingSelectQuery + ", " + ExtSourcesManagerImpl.extSourceMappingSelectQuery +
 				" from UserExtSource as UextS left join ExtSource extS on UextS.extSource.id=extS.id where " +
 						" UextS.userId=? and " +
@@ -628,19 +644,25 @@ public class UsersManagerImpl implements UsersManagerImplApi {
 	@Override
 	public List<UserExtSource> getUserExtSources(PerunSession sess, User user) throws InternalErrorException {
 
-		Configuration configuration = new Configuration();
-		configuration.configure("hibernate.cfg.xml");
-		SessionFactory sessionFactory = configuration.buildSessionFactory();
-		Session session = sessionFactory.openSession();
-		Transaction tx = session.beginTransaction();
+		try {
+			Configuration configuration = new Configuration();
+			configuration.configure("hibernate.cfg.xml");
+			SessionFactory sessionFactory = configuration.buildSessionFactory();
+			Session session = sessionFactory.openSession();
+			Transaction tx = session.beginTransaction();
 
-		List<UserExtSource> userExtSources = session.createQuery("select u From UserExtSource u where u.userId=?", UserExtSource.class)
-				.setParameter(0,user.getId()).getResultList();
+			List<UserExtSource> userExtSources = session.createQuery("select u From UserExtSource u where u.userId= :uId", UserExtSource.class)
+				.setParameter("uId", user.getId())
+				.getResultList();
 
-		tx.commit();
-		session.close();
+			tx.commit();
+			session.close();
 
-		return userExtSources;
+			return userExtSources;
+		} catch (RuntimeException e) {
+			throw new InternalErrorException(e);
+		}
+
 
 
 		/*try {
@@ -1089,15 +1111,15 @@ public class UsersManagerImpl implements UsersManagerImplApi {
 
 		try {
 
-			// check by ext identity (login/ext source ID)
+			// check by ext identity (login/ext source ID)f
 			if (userExtSource.getUserId() >= 0) {
 				/*int numberOfExistences = jdbc.queryForInt("select count(1) from user_ext_sources where login_ext=? and ext_sources_id=? and user_id=?",
 						userExtSource.getLogin(), userExtSource.getExtSource().getId(), userExtSource.getUserId());*/
 
-				int numberOfExistences = session.createQuery("select count(*) from UserExtSource u where u.login=? and u.extSource=? and u.userId=?", Long.class)
-						.setParameter(0, userExtSource.getLogin())
-						.setParameter(1, userExtSource.getExtSource())
-						.setParameter(2, userExtSource.getUserId())
+				int numberOfExistences = session.createQuery("select count(*) from UserExtSource u where u.login= :uLog and u.extSource= :uExtS and u.userId= :uId", Long.class)
+						.setParameter("uLog", userExtSource.getLogin())
+						.setParameter("uExtS", userExtSource.getExtSource())
+						.setParameter("uId", userExtSource.getUserId())
 						.getSingleResult().intValue();
 
 				if (numberOfExistences == 1) {

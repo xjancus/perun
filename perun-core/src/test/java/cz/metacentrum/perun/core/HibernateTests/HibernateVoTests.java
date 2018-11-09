@@ -16,7 +16,7 @@ import static org.junit.Assert.assertNotNull;
 public class HibernateVoTests extends AbstractPerunIntegrationTest {
 	private final static String CLASS_NAME = "VosManager.";
 
-	@Test
+	/*@Test
 	public void getVoById() throws Exception {
 		System.out.println(CLASS_NAME + "getVoById");
 
@@ -54,6 +54,6 @@ public class HibernateVoTests extends AbstractPerunIntegrationTest {
 
 		System.out.println(vos);
 		assertNotNull(vos);
-	}
+	}*/
 
 }

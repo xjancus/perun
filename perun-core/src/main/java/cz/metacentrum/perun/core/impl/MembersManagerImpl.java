@@ -109,17 +109,15 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 
 	@Override
 	public Member getMemberByUserId(PerunSession sess, Vo vo, int userId) throws InternalErrorException, MemberNotExistsException {
-
-		Configuration configuration = new Configuration();
-		configuration.configure("hibernate.cfg.xml");
-		SessionFactory sessionFactory = configuration.buildSessionFactory();
-		Session session = sessionFactory.openSession();
-		Transaction tx = session.beginTransaction();
-
 		try {
-			Member member = session.createQuery("Select m from Member m where m.userId=? and m.voId=?", Member.class)
-					.setParameter(0, userId)
-					.setParameter(1, vo.getId())
+			Configuration configuration = new Configuration();
+			configuration.configure("hibernate.cfg.xml");
+			SessionFactory sessionFactory = configuration.buildSessionFactory();
+			Session session = sessionFactory.openSession();
+			Transaction tx = session.beginTransaction();
+			Member member = session.createQuery("Select m from Member m where m.userId= :uId and m.voId= :voId", Member.class)
+					.setParameter("uId", userId)
+					.setParameter("voId", vo.getId())
 					.uniqueResult();
 
 
@@ -127,8 +125,10 @@ public class MembersManagerImpl implements MembersManagerImplApi {
 
 			session.close();
 			return member;
-		} catch (NoResultException e) {
+		} catch (NoResultException ex) {
 			throw new MemberNotExistsException("user id " + userId + " is not member of VO " + vo);
+		} catch (RuntimeException ex) {
+			throw new InternalErrorException(ex);
 		}
 
 /*		try {

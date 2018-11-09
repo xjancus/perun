@@ -257,21 +257,20 @@ public class ResourcesManagerImpl implements ResourcesManagerImplApi {
 
 	@Override
 	public boolean resourceExists(PerunSession sess, Resource resource) throws InternalErrorException {
+		try {
+			Configuration configuration = new Configuration();
+			configuration.configure("hibernate.cfg.xml");
+			SessionFactory sessionFactory = configuration.buildSessionFactory();
+			Session session = sessionFactory.openSession();
+			Transaction tx = session.beginTransaction();
 
-		Configuration configuration = new Configuration();
-		configuration.configure("hibernate.cfg.xml");
-		SessionFactory sessionFactory = configuration.buildSessionFactory();
-		Session session = sessionFactory.openSession();
-		Transaction tx = session.beginTransaction();
-
-		int numberOfExistences = session.createQuery("Select count(*) from Resource r where r.id=?", Long.class)
-				.setParameter(0, resource.getId())
+			int numberOfExistences = session.createQuery("Select count(*) from Resource r where r.id= :rId", Long.class)
+				.setParameter("rId", resource.getId())
 				.getSingleResult().intValue();
 
-		tx.commit();
-		session.close();
+			tx.commit();
+			session.close();
 
-		try {
 			//int numberOfExistences = jdbc.queryForInt("select count(1) from resources where id=?", resource.getId());
 			if (numberOfExistences == 1) {
 				return true;

@@ -17,7 +17,7 @@ import static org.junit.Assert.assertTrue;
 public class HibernateResourceTests extends AbstractPerunIntegrationTest {
 	private final static String CLASS_NAME = "ResourcesManager.";
 
-	@Test
+	/*@Test
 	public void getResources() throws Exception {
 		System.out.println(CLASS_NAME + "getResources");
 		Configuration configuration = new Configuration();
@@ -54,5 +54,5 @@ public class HibernateResourceTests extends AbstractPerunIntegrationTest {
 		assertNotNull(numberOfExistences);
 		assertTrue(numberOfExistences == 1);
 	}
-
+*/
 }

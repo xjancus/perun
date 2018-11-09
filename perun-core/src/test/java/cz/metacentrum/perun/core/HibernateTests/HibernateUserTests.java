@@ -22,7 +22,7 @@ public class HibernateUserTests extends AbstractPerunIntegrationTest {
 
 	private UsersManagerBl um;
 
-	@Test
+	/*@Test
 	public void getAll() throws Exception {
 		System.out.println(CLASS_NAME + "getUsers");
 
@@ -99,6 +99,6 @@ public class HibernateUserTests extends AbstractPerunIntegrationTest {
 
 		assertNotNull(numberOfExistences);
 		assertTrue(numberOfExistences == 1);
-	}
+	}*/
 
 }

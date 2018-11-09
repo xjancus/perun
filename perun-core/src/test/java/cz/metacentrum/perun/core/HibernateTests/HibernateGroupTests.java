@@ -15,7 +15,7 @@ import java.util.List;
 public class HibernateGroupTests extends AbstractPerunIntegrationTest {
 	private final static String CLASS_NAME = "GroupsManager.";
 
-	@Test
+	/*@Test
 	public void getAllGroups() throws Exception {
 		System.out.println(CLASS_NAME + "getAll");
 		Configuration configuration = new Configuration();
@@ -71,5 +71,5 @@ public class HibernateGroupTests extends AbstractPerunIntegrationTest {
 		System.out.println(group);
 		assertNotNull(group);
 		assertEquals("RT", group.getName());
-	}
+	}*/
 }
