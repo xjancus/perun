@@ -5,6 +5,8 @@
 <hibernate-mapping>
     <class name="cz.metacentrum.perun.core.api.ExtSource" table="ext_sources">
 
+		<cache usage="read-only" region="cz.metacentrum.perun.core.api.ExtSource" />
+
         <id name="id" type="org.hibernate.type.IntegerType">
             <column name="id" not-null="true"/>
         </id>
@@ -34,5 +36,6 @@
         <property name="modifiedByUid" type="org.hibernate.type.IntegerType">
             <column name="modified_by_uid" />
         </property>
+
     </class>
 </hibernate-mapping>

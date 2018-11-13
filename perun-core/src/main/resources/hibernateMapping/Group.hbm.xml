@@ -4,7 +4,10 @@
 
 <hibernate-mapping>
     <class name="cz.metacentrum.perun.core.api.Group" table="groups" >
-        <id name="id" type="org.hibernate.type.IntegerType">
+
+		<cache usage="read-only" region="cz.metacentrum.perun.core.api.Group" />
+
+		<id name="id" type="org.hibernate.type.IntegerType">
             <column name="id" not-null="true"/>
         </id>
 

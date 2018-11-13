@@ -7,7 +7,9 @@ import cz.metacentrum.perun.core.implApi.modules.pwdmgr.PasswordManagerModule;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.service.ServiceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
@@ -149,7 +151,11 @@ public class UsersManagerImpl implements UsersManagerImplApi {
 		try {
 			Configuration configuration = new Configuration();
 			configuration.configure("hibernate.cfg.xml");
-			SessionFactory sessionFactory = configuration.buildSessionFactory();
+
+			ServiceRegistry serviceRegistry = new StandardServiceRegistryBuilder()
+				.applySettings(configuration.getProperties()).build();
+
+			SessionFactory sessionFactory = configuration.buildSessionFactory(serviceRegistry);
 			Session session = sessionFactory.openSession();
 			Transaction tx = session.beginTransaction();
 
@@ -157,6 +163,8 @@ public class UsersManagerImpl implements UsersManagerImplApi {
 			User u = session.createQuery("Select u from User u where u.id= :uId", User.class)
 				.setParameter("uId", id)
 				.getSingleResult();
+
+			/*User u = session.get(User.class, id);*/
 
 			tx.commit();
 
@@ -167,6 +175,7 @@ public class UsersManagerImpl implements UsersManagerImplApi {
 			user.setId(id);
 			throw new UserNotExistsException(user);
 		} catch (RuntimeException ex) {
+			System.out.println(ex.getCause());
 			throw new InternalErrorException(ex);
 		}
 

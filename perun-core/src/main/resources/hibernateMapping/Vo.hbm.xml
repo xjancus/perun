@@ -4,6 +4,9 @@
 
 <hibernate-mapping>
     <class name="cz.metacentrum.perun.core.api.Vo" table="vos" >
+
+		<cache usage="read-only" region="cz.metacentrum.perun.core.api.Vo" />
+
         <id name="id" type="org.hibernate.type.IntegerType">
             <column name="id" not-null="true"/>
         </id>
