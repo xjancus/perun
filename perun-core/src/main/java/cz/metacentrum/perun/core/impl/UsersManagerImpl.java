@@ -151,11 +151,7 @@ public class UsersManagerImpl implements UsersManagerImplApi {
 		try {
 			Configuration configuration = new Configuration();
 			configuration.configure("hibernate.cfg.xml");
-
-			ServiceRegistry serviceRegistry = new StandardServiceRegistryBuilder()
-				.applySettings(configuration.getProperties()).build();
-
-			SessionFactory sessionFactory = configuration.buildSessionFactory(serviceRegistry);
+			SessionFactory sessionFactory = configuration.buildSessionFactory();
 			Session session = sessionFactory.openSession();
 			Transaction tx = session.beginTransaction();
 
