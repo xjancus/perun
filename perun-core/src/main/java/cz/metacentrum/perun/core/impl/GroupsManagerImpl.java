@@ -13,7 +13,12 @@ import cz.metacentrum.perun.core.api.exceptions.GroupRelationDoesNotExist;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.boot.Metadata;
+import org.hibernate.boot.MetadataSources;
+import org.hibernate.boot.registry.StandardServiceRegistry;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
@@ -123,14 +128,48 @@ public class GroupsManagerImpl implements GroupsManagerImplApi {
 		Utils.notNull(group, "group");
 		Utils.notNull(group.getName(), "group.getName()");
 
+		/*Session session = sess.getSession();
+		Query<Long> groupExistsQuery;
+		Query<Long> subGroupExistsQuery;*/
+
+
 		// Check if the group already exists
 		if(group.getParentGroupId() == null) {
 			// check if the TOP level group exists
+
+			/*if (sess.getGroupExistsQuery() == null) {
+				groupExistsQuery = session.createQuery("Select count(*) from Group g Where g.name= :gName and g.voId= :voId and g.parentGroupId is NULL", Long.class)
+					.setCacheable(true);
+			} else {
+				groupExistsQuery = sess.getGroupExistsQuery();
+			}
+			if (1 == groupExistsQuery
+				.setParameter("gName", group.getName().toLowerCase())
+				.setParameter("voId", vo.getId())
+				.getSingleResult().intValue()) {
+				throw new GroupExistsException("Group [" + group.getName() + "] already exists under VO [" + vo.getShortName() + "] and has parent Group with id is [NULL]");
+			}*/
+
 			if (1 == jdbc.queryForInt("select count('x') from groups where lower(name)=lower(?) and vo_id=? and parent_group_id IS NULL", group.getName(), vo.getId())) {
 				throw new GroupExistsException("Group [" + group.getName() + "] already exists under VO [" + vo.getShortName() + "] and has parent Group with id is [NULL]");
 			}
 		} else {
 			// check if subgroup exists under parent group
+
+			/*if (sess.getGetSubGroupsQuery() == null) {
+				subGroupExistsQuery = session.createQuery("Select count(*) from Group g Where g.name= :gName and g.voId= :voId and g.parentGroupId= :pId", Long.class)
+					.setCacheable(true);
+			} else {
+				subGroupExistsQuery = sess.getSubGroupExistsQuery();
+			}
+			if (1 == subGroupExistsQuery
+				.setParameter("gName", group.getName().toLowerCase())
+				.setParameter("voId", vo.getId())
+				.setParameter("pId", group.getParentGroupId())
+				.getSingleResult().intValue()) {
+				throw new GroupExistsException("Group [" + group.getName() + "] already exists under VO [" + vo.getShortName() + "] and has parent Group with id is [NULL]");
+			}*/
+
 			if (1 == jdbc.queryForInt("select count('x') from groups where lower(name)=lower(?) and vo_id=? and parent_group_id=?", group.getName(), vo.getId(), group.getParentGroupId())) {
 				throw new GroupExistsException("Group [" + group.getName() + "] already exists under VO [" + vo.getShortName() + "] and has parent Group with id [" + group.getParentGroupId() + "]");
 			}
@@ -144,6 +183,12 @@ public class GroupsManagerImpl implements GroupsManagerImplApi {
 		try {
 			// Store the group into the DB
 			int newId = Utils.getNewId(jdbc, "groups_id_seq");
+
+			/*Group group1 = new Group(group.getName(), group.getDescription(), group.getCreatedAt(),
+				group.getCreatedBy(), group.getModifiedAt(), group.getModifiedBy(),
+				group.getCreatedByUid(), group.getModifiedByUid());
+
+			session.save(group1);*/
 
 			jdbc.update("insert into groups (id, parent_group_id, name, dsc, vo_id, created_by,created_at,modified_by,modified_at,created_by_uid,modified_by_uid) " +
 					"values (?,?,?,?,?,?," + Compatibility.getSysdate() + ",?," + Compatibility.getSysdate() + ",?,?)", newId, group.getParentGroupId(),
@@ -303,13 +348,19 @@ public class GroupsManagerImpl implements GroupsManagerImplApi {
 
 	@Override
 	public Group getGroupById(PerunSession sess, int id) throws GroupNotExistsException, InternalErrorException {
-		try {
+		Session session = sess.getSession();
+
+		Group g = session.find(Group.class, id);
+
+		return g;
+
+/*		try {
 			return jdbc.queryForObject("select " + groupMappingSelectQuery + " from groups where groups.id=? ", GROUP_MAPPER, id);
 		} catch (EmptyResultDataAccessException err) {
 			throw new GroupNotExistsException("Group id=" + id);
 		} catch (RuntimeException err) {
 			throw new InternalErrorException(err);
-		}
+		}*/
 	}
 
 	@Override
@@ -458,26 +509,26 @@ public class GroupsManagerImpl implements GroupsManagerImplApi {
 	@Override
 	public List<Group> getSubGroups(PerunSession sess, Group parentGroup) throws InternalErrorException {
 		try {
-			Configuration configuration = new Configuration();
-			configuration.configure("hibernate.cfg.xml");
-			SessionFactory sessionFactory = configuration.buildSessionFactory();
-			Session session = sessionFactory.openSession();
-			Transaction tx = session.beginTransaction();
+			Session session = sess.getSession();
+			Query<Group> query;
 
-			List<Group> groups = session.createQuery("select g from Group g where g.parentGroupId= :pgId order by g.name", Group.class)
+			if (sess.getGetSubGroupsQuery() == null) {
+				query = session.createQuery("select g from Group g where g.parentGroupId= :pgId order by g.name", Group.class)
+					.setCacheable(true);
+			} else {
+				query = sess.getGetSubGroupsQuery();
+			}
+
+			List<Group> subGroups = query
 				.setParameter("pgId", parentGroup.getId())
 				.getResultList();
 
-			tx.commit();
-			session.close();
-
-			return groups;
+			return subGroups;
 		} catch (NoResultException ex) {
 			return new ArrayList<Group>();
 		} catch (RuntimeException ex) {
 			throw new InternalErrorException(ex);
 		}
-
 
 
 /*		try {

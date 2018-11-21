@@ -15,8 +15,12 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
 import org.hibernate.Transaction;
+import org.hibernate.boot.Metadata;
+import org.hibernate.boot.MetadataSources;
+import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.stat.Statistics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -283,15 +287,23 @@ public class ServicesManagerImpl implements ServicesManagerImplApi {
 	public Service getServiceById(PerunSession sess, int id) throws InternalErrorException, ServiceNotExistsException {
 
 /*		try {
-			Configuration configuration = new Configuration();
+			*//*Configuration configuration = new Configuration();
 			configuration.configure("hibernate.cfg.xml");
-			SessionFactory sessionFactory = configuration.buildSessionFactory();
+			SessionFactory sessionFactory = configuration.buildSessionFactory();*//*
+
+			StandardServiceRegistry standardRegistry = new StandardServiceRegistryBuilder().configure().build();
+			Metadata metadata = new MetadataSources(standardRegistry).getMetadataBuilder().build();
+			SessionFactory sessionFactory = metadata.getSessionFactoryBuilder().build();
+
 			Session session = sessionFactory.openSession();
 			Transaction tx = session.beginTransaction();
 
 			Service service = session.createQuery("Select s From Service s where s.id= :sId", Service.class)
 				.setParameter("sId", id)
 				.getSingleResult();
+
+			Statistics stats = sessionFactory.getStatistics();
+			System.out.println(stats);
 
 			tx.commit();
 			session.close();
@@ -506,9 +518,14 @@ public class ServicesManagerImpl implements ServicesManagerImplApi {
 	@Override
 	public boolean serviceExists(PerunSession sess, Service service) throws InternalErrorException {
 		try {
-			Configuration configuration = new Configuration();
+			/*Configuration configuration = new Configuration();
 			configuration.configure("hibernate.cfg.xml");
-			SessionFactory sessionFactory = configuration.buildSessionFactory();
+			SessionFactory sessionFactory = configuration.buildSessionFactory();*/
+
+			/*StandardServiceRegistry standardRegistry = new StandardServiceRegistryBuilder().configure().build();
+			Metadata metadata = new MetadataSources(standardRegistry).getMetadataBuilder().build();
+			SessionFactory sessionFactory = metadata.getSessionFactoryBuilder().build();
+
 			Session session = sessionFactory.openSession();
 			Transaction tx = session.beginTransaction();
 
@@ -517,9 +534,9 @@ public class ServicesManagerImpl implements ServicesManagerImplApi {
 				.getSingleResult().intValue();
 
 			tx.commit();
-			session.close();
+			session.close();*/
 
-			//int numberOfExistences = jdbc.queryForInt("select count(1) from services where id=?", service.getId());
+			int numberOfExistences = jdbc.queryForInt("select count(1) from services where id=?", service.getId());
 			if (numberOfExistences == 1) {
 				return true;
 			} else if (numberOfExistences > 1) {

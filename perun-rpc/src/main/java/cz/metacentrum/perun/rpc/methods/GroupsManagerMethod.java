@@ -1,6 +1,8 @@
 package cz.metacentrum.perun.rpc.methods;
 
 import cz.metacentrum.perun.core.api.Attribute;
+
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +10,7 @@ import java.util.Map;
 import cz.metacentrum.perun.core.api.Group;
 import cz.metacentrum.perun.core.api.Member;
 import cz.metacentrum.perun.core.api.MemberGroupStatus;
+import cz.metacentrum.perun.core.api.Pair;
 import cz.metacentrum.perun.core.api.RichGroup;
 import cz.metacentrum.perun.core.api.RichMember;
 import cz.metacentrum.perun.core.api.RichUser;
@@ -18,6 +21,8 @@ import cz.metacentrum.perun.rpc.ApiCaller;
 import cz.metacentrum.perun.rpc.ManagerMethod;
 import cz.metacentrum.perun.core.api.exceptions.RpcException;
 import cz.metacentrum.perun.rpc.deserializer.Deserializer;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
 
 public enum GroupsManagerMethod implements ManagerMethod {
 
@@ -57,6 +62,60 @@ public enum GroupsManagerMethod implements ManagerMethod {
 		@Override
 		public Group call(ApiCaller ac, Deserializer parms) throws PerunException {
 			ac.stateChangingCheck();
+
+			/*ArrayList<Group> groups = new ArrayList<>();
+
+			Session session = HibernateUtils.getSessionFactory().openSession();
+			Transaction tx = session.beginTransaction();
+
+			ac.getSession().setSession(session);
+			ac.getRpcSession().setSession(session);
+
+			if (parms.contains("group")) {
+				if (parms.contains("parentGroup")) {
+					Group group = ac.getGroupsManager().createGroup(ac.getSession(),
+						ac.getGroupById(parms.readInt("parentGroup")),
+						parms.read("group", Group.class));
+
+					groups.add(group);
+					tx.commit();
+					session.close();
+					return group;
+
+				} else if (parms.contains("vo")) {
+					Group group = parms.read("group", Group.class);
+					if (group.getParentGroupId() == null) {
+						return ac.getGroupsManager().createGroup(ac.getSession(),
+							ac.getVoById(parms.readInt("vo")),
+							group);
+					} else {
+						throw new RpcException(RpcException.Type.WRONG_PARAMETER, "Top-level groups can't have parentGroupId set!");
+					}
+				} else {
+					throw new RpcException(RpcException.Type.MISSING_VALUE, "vo or parentGroup");
+				}
+			} else if (parms.contains("name") && parms.contains("description")) {
+				if (parms.contains("parentGroup")) {
+					String name = parms.readString("name");
+					String description = parms.readString("description");
+					Group group = new Group(name, description);
+					return ac.getGroupsManager().createGroup(ac.getSession(),
+						ac.getGroupById(parms.readInt("parentGroup")),
+						group);
+				} else if (parms.contains("vo")) {
+					String name = parms.readString("name");
+					String description = parms.readString("description");
+					Group group = new Group(name, description);
+					return ac.getGroupsManager().createGroup(ac.getSession(),
+						ac.getVoById(parms.readInt("vo")),
+						group);
+				} else {
+					throw new RpcException(RpcException.Type.MISSING_VALUE, "vo or parentGroup");
+				}
+			} else {
+				throw new RpcException(RpcException.Type.MISSING_VALUE, "group or (name and description)");
+			} */
+
 
 			if (parms.contains("group")) {
 				if (parms.contains("parentGroup")) {
@@ -249,7 +308,17 @@ public enum GroupsManagerMethod implements ManagerMethod {
 
 		@Override
 		public Group call(ApiCaller ac, Deserializer parms) throws PerunException {
-			return ac.getGroupById(parms.readInt("id"));
+			Session session = HibernateUtils.getSessionFactory().openSession();
+			Transaction tx = session.beginTransaction();
+
+			ac.getRpcSession().setSession(session);
+			ac.getSession().setSession(session);
+
+			Group group = ac.getGroupById(parms.readInt("id"));
+
+			tx.commit();
+			session.close();
+			return group;
 		}
 	},
 
@@ -499,8 +568,37 @@ public enum GroupsManagerMethod implements ManagerMethod {
 	 */
 	getSubGroups {
 		@Override
-		public List<Group> call(ApiCaller ac, Deserializer parms) throws PerunException {
-			return ac.getGroupsManager().getSubGroups(ac.getSession(), ac.getGroupById(parms.readInt("parentGroup")));
+		public Pair<List<List<Group>>, String> call(ApiCaller ac, Deserializer parms) throws PerunException {
+
+			Timestamp startTime = new Timestamp(System.currentTimeMillis());
+			long startTimeXX = System.currentTimeMillis();
+
+			ArrayList<List<Group>> subgroups = new ArrayList<>();
+
+			Session session = HibernateUtils.getSessionFactory().openSession();
+			Transaction tx = session.beginTransaction();
+
+			ac.getRpcSession().setSession(session);
+			ac.getSession().setSession(session);
+
+			for (int i = 0; i < 5000; i++) {
+				subgroups.add(ac.getGroupsManager().getSubGroups(ac.getSession(), ac.getGroupById(parms.readInt("parentGroup"))));
+			}
+
+			tx.commit();
+			session.close();
+
+			Timestamp finishTime = new Timestamp(System.currentTimeMillis());
+
+			long elapsed = System.currentTimeMillis() - startTimeXX;
+
+			System.out.println(" 5000x  Test started at: " + startTime + " ||| " +
+				" Test finished at: " + finishTime + " Time elapsed: " + elapsed);
+
+			return new Pair<>(subgroups, " 10 000x Test started at: " + startTime + " ||| " +
+				" Test finished at: " + finishTime + " Time elapsed: " + elapsed);
+
+			//return ac.getGroupsManager().getSubGroups(ac.getSession(), ac.getGroupById(parms.readInt("parentGroup")));
 		}
 	},
 

@@ -2,12 +2,14 @@ package cz.metacentrum.perun.core.impl;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.persistence.NoResultException;
 import javax.sql.DataSource;
 
+import org.hibernate.CacheMode;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -16,6 +18,8 @@ import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.service.ServiceRegistry;
+import org.hibernate.stat.Statistics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -338,22 +342,10 @@ public class FacilitiesManagerImpl implements FacilitiesManagerImplApi {
 
 	@Override
 	public Facility getFacilityById(PerunSession sess, int id) throws InternalErrorException, FacilityNotExistsException {
-/*		try {
-			Configuration configuration = new Configuration();
-			configuration.configure("hibernate.cfg.xml");
-			SessionFactory sessionFactory = configuration.buildSessionFactory();
+		try {
+			Session session = sess.getSession();
+			Facility f = session.find(Facility.class, id);
 
-			Session session = sessionFactory.openSession();
-			Transaction tx = session.beginTransaction();
-
-			//Facility f = session.find(Facility.class, id);
-
-			Facility f = session.createQuery("Select f From Facility f Where f.id= :fId", Facility.class)
-				.setParameter("fId", id)
-				.getSingleResult();
-
-			tx.commit();
-			session.close();
 			return f;
 		} catch (NoResultException ex) {
 			Facility fac = new Facility();
@@ -363,9 +355,9 @@ public class FacilitiesManagerImpl implements FacilitiesManagerImplApi {
 			System.out.println(ex.getCause().toString());
 			ex.printStackTrace();
 			throw new InternalErrorException(ex);
-		}*/
+		}
 
-		try {
+/*		try {
 			return jdbc.queryForObject("select " + facilityMappingSelectQuery + " from facilities where id=?", FACILITY_MAPPER, id);
 		} catch (EmptyResultDataAccessException ex) {
 			Facility fac = new Facility();
@@ -373,7 +365,7 @@ public class FacilitiesManagerImpl implements FacilitiesManagerImplApi {
 			throw new FacilityNotExistsException(fac);
 		} catch (RuntimeException ex) {
 			throw new InternalErrorException(ex);
-		}
+		}*/
 	}
 
 	@Override

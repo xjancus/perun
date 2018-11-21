@@ -102,6 +102,10 @@ public class ApiCaller {
 	private final PerunSession session;
 	private final PerunSession rpcSession;
 
+	public PerunSession getRpcSession() {
+		return rpcSession;
+	}
+
 	public AuditMessagesManager getAuditMessagesManager() {
 		if (auditMessagesManager == null){
 			auditMessagesManager = rpcSession.getPerun().getAuditMessagesManager();

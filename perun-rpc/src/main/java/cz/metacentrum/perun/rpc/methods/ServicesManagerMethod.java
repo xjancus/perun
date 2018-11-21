@@ -1,10 +1,12 @@
 package cz.metacentrum.perun.rpc.methods;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
 import cz.metacentrum.perun.core.api.AttributeDefinition;
 import cz.metacentrum.perun.core.api.Destination;
+import cz.metacentrum.perun.core.api.Pair;
 import cz.metacentrum.perun.core.api.RichDestination;
 import cz.metacentrum.perun.core.api.Service;
 import cz.metacentrum.perun.core.api.ServiceAttributes;
@@ -97,6 +99,23 @@ public enum ServicesManagerMethod implements ManagerMethod {
 
 		@Override
 		public Service call(ApiCaller ac, Deserializer parms) throws PerunException {
+
+			/*Timestamp startTime = new Timestamp(System.currentTimeMillis());
+
+			ArrayList<Service> services = new ArrayList<>();
+
+			for (int i = 0; i < 10; i++) {
+				services.add(ac.getServiceById(parms.readInt("id")));
+			}
+
+			Timestamp finishTime = new Timestamp(System.currentTimeMillis());
+
+			int elapsed = finishTime.getNanos() - startTime.getNanos();
+
+			return new Pair<>(services, "\n 10x Test started at: " + startTime + " |||" +
+				" Test finished at: " + finishTime + "\n Time elapsed: " + elapsed);*/
+
+
 			return ac.getServiceById(parms.readInt("id"));
 		}
 	},

@@ -18,7 +18,7 @@
             <column name="login_ext" length="1300" not-null="true"/>
         </property>
 
-        <many-to-one name="extSource" unique="true" class="cz.metacentrum.perun.core.api.ExtSource" >
+        <many-to-one name="extSource" unique="true" class="cz.metacentrum.perun.core.api.ExtSource">
             <column name="ext_sources_id" not-null="true" />
         </many-to-one>
 

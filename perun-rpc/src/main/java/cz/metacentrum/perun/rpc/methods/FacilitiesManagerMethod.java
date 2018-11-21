@@ -3,6 +3,7 @@ package cz.metacentrum.perun.rpc.methods;
 import cz.metacentrum.perun.core.api.SecurityTeam;
 import cz.metacentrum.perun.core.api.*;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,6 +12,8 @@ import cz.metacentrum.perun.rpc.ApiCaller;
 import cz.metacentrum.perun.rpc.ManagerMethod;
 import cz.metacentrum.perun.core.api.exceptions.RpcException;
 import cz.metacentrum.perun.rpc.deserializer.Deserializer;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
 
 public enum FacilitiesManagerMethod implements ManagerMethod {
 
@@ -23,8 +26,30 @@ public enum FacilitiesManagerMethod implements ManagerMethod {
 	getFacilityById {
 
 		@Override
-		public Facility call(ApiCaller ac, Deserializer parms) throws PerunException {
-			return ac.getFacilityById(parms.readInt("id"));
+		public List<Facility> call(ApiCaller ac, Deserializer parms) throws PerunException {
+
+			long startTimeXX = System.currentTimeMillis();
+
+			ArrayList<Facility> facilities = new ArrayList<>();
+
+			Session session = HibernateUtils.getSessionFactory().openSession();
+			Transaction tx = session.beginTransaction();
+
+			ac.getRpcSession().setSession(session);
+			ac.getSession().setSession(session);
+
+			for (int i = 0; i < 10000; i++) {
+				facilities.add(ac.getFacilityById(parms.readInt("id")));
+			}
+
+			tx.commit();
+			session.close();
+
+			long elapsed = System.currentTimeMillis() - startTimeXX;
+
+			System.out.println("[getFacilityById] 10 000x time elapsed: " + elapsed);
+
+			return new ArrayList<>();
 		}
 	},
 

@@ -4,12 +4,19 @@ import cz.metacentrum.perun.core.api.*;
 import cz.metacentrum.perun.core.api.exceptions.*;
 import cz.metacentrum.perun.core.implApi.UsersManagerImplApi;
 import cz.metacentrum.perun.core.implApi.modules.pwdmgr.PasswordManagerModule;
+import org.hibernate.CacheMode;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.boot.Metadata;
+import org.hibernate.boot.MetadataSources;
+import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.query.Query;
 import org.hibernate.service.ServiceRegistry;
+import org.hibernate.stat.SessionStatistics;
+import org.hibernate.stat.Statistics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
@@ -24,6 +31,7 @@ import javax.persistence.NoResultException;
 import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -35,6 +43,11 @@ import java.util.regex.Pattern;
  * @author Sona Mastrakova
  */
 public class UsersManagerImpl implements UsersManagerImplApi {
+
+	/*private StandardServiceRegistry standardRegistry = new StandardServiceRegistryBuilder().configure().build();
+	private Metadata metadata = new MetadataSources(standardRegistry).getMetadataBuilder().build();
+	private SessionFactory sessionFactory = metadata.getSessionFactoryBuilder().build();*/
+
 
 	private final static Logger log = LoggerFactory.getLogger(UsersManagerImpl.class);
 
@@ -149,26 +162,9 @@ public class UsersManagerImpl implements UsersManagerImplApi {
 	public User getUserById(PerunSession sess, int id) throws InternalErrorException, UserNotExistsException {
 
 		try {
-			Configuration configuration = new Configuration();
-			configuration.configure("hibernate.cfg.xml");
+			Session session = sess.getSession();
+			User u = session.find(User.class, id);
 
-			ServiceRegistry serviceRegistry = new StandardServiceRegistryBuilder()
-				.applySettings(configuration.getProperties()).build();
-
-			SessionFactory sessionFactory = configuration.buildSessionFactory(serviceRegistry);
-			Session session = sessionFactory.openSession();
-			Transaction tx = session.beginTransaction();
-
-			//User u = session.find(User.class, id);
-			User u = session.createQuery("Select u from User u where u.id= :uId", User.class)
-				.setParameter("uId", id)
-				.getSingleResult();
-
-			/*User u = session.get(User.class, id);*/
-
-			tx.commit();
-
-			session.close();
 			return u;
 		} catch (NoResultException ex) {
 			User user = new User();
@@ -180,8 +176,7 @@ public class UsersManagerImpl implements UsersManagerImplApi {
 		}
 
 
-
-		/*try {
+/*		try {
 			return jdbc.queryForObject("select " + userMappingSelectQuery + " from users where users.id=? ", USER_MAPPER, id);
 		} catch (EmptyResultDataAccessException ex) {
 			throw new UserNotExistsException("user id=" + id);
@@ -654,18 +649,20 @@ public class UsersManagerImpl implements UsersManagerImplApi {
 	public List<UserExtSource> getUserExtSources(PerunSession sess, User user) throws InternalErrorException {
 
 		try {
-			Configuration configuration = new Configuration();
-			configuration.configure("hibernate.cfg.xml");
-			SessionFactory sessionFactory = configuration.buildSessionFactory();
-			Session session = sessionFactory.openSession();
-			Transaction tx = session.beginTransaction();
 
-			List<UserExtSource> userExtSources = session.createQuery("select u From UserExtSource u where u.userId= :uId", UserExtSource.class)
+			Session session = sess.getSession();
+			Query<UserExtSource> query;
+
+			if (sess.getUserExtSourceQuery() == null) {
+				query = session.createQuery("select u From UserExtSource u where u.userId= :uId", UserExtSource.class)
+					.setCacheable(true);
+			} else {
+				query = sess.getUserExtSourceQuery();
+			}
+
+			List<UserExtSource> userExtSources = query
 				.setParameter("uId", user.getId())
 				.getResultList();
-
-			tx.commit();
-			session.close();
 
 			return userExtSources;
 		} catch (RuntimeException e) {
@@ -674,7 +671,7 @@ public class UsersManagerImpl implements UsersManagerImplApi {
 
 
 
-		/*try {
+/*		try {
 			return jdbc.query("SELECT " + userExtSourceMappingSelectQuery + "," + ExtSourcesManagerImpl.extSourceMappingSelectQuery +
 			        " FROM user_ext_sources left join ext_sources on user_ext_sources.ext_sources_id=ext_sources.id" +
 			        " WHERE user_ext_sources.user_id=?", USEREXTSOURCE_MAPPER, user.getId());
@@ -1112,24 +1109,33 @@ public class UsersManagerImpl implements UsersManagerImplApi {
 		Utils.notNull(userExtSource.getLogin(), "userExtSource.getLogin");
 		Utils.notNull(userExtSource.getExtSource(), "userExtSource.getExtSource");
 
-		Configuration configuration = new Configuration();
-		configuration.configure("hibernate.cfg.xml");
-		SessionFactory sessionFactory = configuration.buildSessionFactory();
-		Session session = sessionFactory.openSession();
-		session.beginTransaction();
-
 		try {
+			Session session = sess.getSession();
+			Query<Long> query1;
+			Query<Long> query2;
+
+
 
 			// check by ext identity (login/ext source ID)f
 			if (userExtSource.getUserId() >= 0) {
 				/*int numberOfExistences = jdbc.queryForInt("select count(1) from user_ext_sources where login_ext=? and ext_sources_id=? and user_id=?",
 						userExtSource.getLogin(), userExtSource.getExtSource().getId(), userExtSource.getUserId());*/
 
-				int numberOfExistences = session.createQuery("select count(*) from UserExtSource u where u.login= :uLog and u.extSource= :uExtS and u.userId= :uId", Long.class)
+
+
+				if (sess.getUserExtSourceExistsQuery1() == null) {
+					query1 = session.createQuery("select count(*) from UserExtSource u where u.login= :uLog and u.extSource= :uExtS and u.userId= :uId", Long.class)
+						.setCacheable(true);
+				} else {
+					query1 = sess.getUserExtSourceExistsQuery1();
+				}
+
+				int numberOfExistences = query1
 						.setParameter("uLog", userExtSource.getLogin())
 						.setParameter("uExtS", userExtSource.getExtSource())
 						.setParameter("uId", userExtSource.getUserId())
 						.getSingleResult().intValue();
+
 
 				if (numberOfExistences == 1) {
 					return true;
@@ -1141,10 +1147,19 @@ public class UsersManagerImpl implements UsersManagerImplApi {
 				/*int numberOfExistences = jdbc.queryForInt("select count(1) from user_ext_sources where login_ext=? and ext_sources_id=?",
 						userExtSource.getLogin(), userExtSource.getExtSource().getId());*/
 
-				int numberOfExistences = session.createQuery("select count(*) from UserExtSource u where u.login=? and u.extSource=?", Long.class)
-						.setParameter(0, userExtSource.getLogin())
-						.setParameter(1, userExtSource.getExtSource())
-						.getSingleResult().intValue();
+				if (sess.getUserExtSourceExistsQuery2() == null) {
+					query2 = session.createQuery("select count(*) from UserExtSource u where u.login= :uLog and u.extSource= :uExtS and u.userId= :uId", Long.class)
+						.setCacheable(true);
+				} else {
+					query2 = sess.getUserExtSourceExistsQuery2();
+				}
+
+				int numberOfExistences = query2
+					.setParameter("uLog", userExtSource.getLogin())
+					.setParameter("uExtS", userExtSource.getExtSource())
+					.setParameter("uId", userExtSource.getUserId())
+					.getSingleResult().intValue();
+
 
 				if (numberOfExistences == 1) {
 					return true;
@@ -1153,6 +1168,8 @@ public class UsersManagerImpl implements UsersManagerImplApi {
 				}
 				return false;
 			}
+
+
 
 		} catch(EmptyResultDataAccessException ex) {
 			return false;
